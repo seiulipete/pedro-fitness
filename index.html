@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#080810"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Pedro FiT"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>Pedro FiT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════════
+   DESIGN TOKENS
+══════════════════════════════════════════ */
+:root{
+  --bg:#080810; --bg2:#0e0e1a; --bg3:#14141f; --card:#18182a;
+  --border:#25253a; --border2:#30304a;
+  --red:#ff3c3c; --red2:#cc2020;
+  --orange:#ff6a2b; --gold:#f0a500;
+  --green:#00e06a; --blue:#3a9ff0; --purple:#9b6dff;
+  --text:#f0f0ff; --text2:#7878a0; --text3:#45455a;
+  --r:16px;
+  --st:env(safe-area-inset-top,0px);
+  --sb:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:'DM Sans',sans-serif;overflow:hidden;user-select:none}
+body{display:flex;flex-direction:column;height:100dvh}
+
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden}
+.screen.active{display:flex;animation:fadeUp .28s cubic-bezier(.2,.8,.3,1)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom:calc(88px + var(--sb))}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ── NAV ── */
+nav{position:fixed;bottom:0;left:0;right:0;
+  background:rgba(8,8,16,.96);backdrop-filter:blur(24px);
+  border-top:1px solid var(--border);
+  display:flex;padding-bottom:var(--sb);z-index:100}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;
+  gap:3px;padding:10px 0;border:none;background:none;
+  color:var(--text3);cursor:pointer;transition:color .2s;
+  font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;letter-spacing:.4px}
+.nb.active{color:var(--red)}
+.nb svg{width:22px;height:22px;stroke-width:1.8}
+
+/* ── HEADER ── */
+.hdr{padding:calc(var(--st)+16px) 20px 12px;
+  background:linear-gradient(180deg,var(--bg) 0%,transparent);
+  position:sticky;top:0;z-index:10;backdrop-filter:blur(12px)}
+.hdr-row{display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase}
+.logo span{color:var(--red)}
+.hdr-badge{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:1px;color:var(--text2)}
+.hdr-action{width:34px;height:34px;border-radius:50%;border:1px solid var(--border2);
+  background:none;color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* ── SECTION LABEL ── */
+.slbl{padding:18px 20px 8px;font-family:'Oswald',sans-serif;
+  font-size:11px;font-weight:500;letter-spacing:2.5px;text-transform:uppercase;color:var(--text3)}
+
+/* ── DIVIDER ── */
+.hdiv{height:1px;background:var(--border);margin:0 20px}
+
+/* ══════════════════════════════════════════
+   ONBOARDING
+══════════════════════════════════════════ */
+#screen-onboard{background:var(--bg);justify-content:flex-end}
+.ob-wrap{flex:1;display:flex;flex-direction:column;
+  padding:calc(var(--st)+20px) 0 0;overflow:hidden}
+.ob-slides{display:flex;flex:1;transition:transform .38s cubic-bezier(.3,.9,.4,1)}
+.ob-slide{min-width:100%;padding:0 24px 0;display:flex;flex-direction:column;
+  justify-content:flex-start;padding-top:20px;gap:8px;overflow-y:auto}
+.ob-icon{font-size:48px;margin-bottom:4px}
+.ob-title{font-family:'Oswald',sans-serif;font-size:34px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;line-height:1.1}
+.ob-sub{font-size:14px;color:var(--text2);line-height:1.55;margin-bottom:6px}
+
+/* ── CHIP GRID ── */
+.chip-grid{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:8px}
+.chip{padding:9px 14px;border-radius:40px;border:1px solid var(--border2);
+  background:none;color:var(--text2);font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:500;cursor:pointer;transition:.18s;
+  display:flex;align-items:center;gap:6px;white-space:nowrap}
+.chip.sel{background:var(--red);border-color:var(--red);color:#fff}
+.chip-ic{font-size:15px}
+
+/* ── LEVEL CARDS ── */
+.level-cards{display:flex;flex-direction:column;gap:10px}
+.lcard{padding:16px;border-radius:var(--r);border:1px solid var(--border2);
+  background:var(--card);cursor:pointer;transition:.18s}
+.lcard.sel{border-color:var(--red);background:rgba(255,60,60,.08)}
+.lcard h3{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;margin-bottom:3px}
+.lcard p{font-size:13px;color:var(--text2)}
+
+/* ── DURATION BUTTONS ── */
+.dur-row{display:flex;gap:10px}
+.dur-btn{flex:1;padding:18px 8px;border-radius:var(--r);
+  border:1px solid var(--border2);background:var(--card);
+  cursor:pointer;text-align:center;transition:.18s}
+.dur-btn.sel{border-color:var(--red);background:rgba(255,60,60,.08)}
+.dur-val{font-family:'Oswald',sans-serif;font-size:30px;font-weight:700;
+  line-height:1;color:var(--red)}
+.dur-lbl{font-size:10px;color:var(--text2);margin-top:3px;
+  text-transform:uppercase;letter-spacing:.8px}
+
+/* ── ONBOARD NAV ── */
+.ob-nav{padding:14px 24px calc(var(--sb)+14px);
+  display:flex;align-items:center;gap:12px}
+.step-dots{display:flex;gap:5px;flex:1;justify-content:center}
+.sdot{width:6px;height:6px;border-radius:3px;background:var(--border2);transition:.3s}
+.sdot.active{width:18px;background:var(--red)}
+.ob-back{width:44px;height:44px;border-radius:50%;border:1px solid var(--border2);
+  background:none;color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ob-next{flex:1;padding:15px;border-radius:14px;border:none;
+  background:var(--red);color:#fff;font-family:'Oswald',sans-serif;
+  font-size:18px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;transition:.15s;max-width:200px}
+.ob-next:active{background:var(--red2);transform:scale(.97)}
+.ob-next:disabled{background:var(--border);color:var(--text3);cursor:default;transform:none}
+
+/* ══════════════════════════════════════════
+   HOME
+══════════════════════════════════════════ */
+.today-hero{
+  margin:0 16px 14px;border-radius:20px;overflow:hidden;
+  background:linear-gradient(135deg,#1a0808,#2a0f0f);
+  border:1px solid rgba(255,60,60,.2);cursor:pointer;position:relative}
+.today-hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 75% 50%,rgba(255,60,60,.12) 0%,transparent 60%)}
+.th-body{padding:20px;position:relative}
+.th-tag{font-family:'Oswald',sans-serif;font-size:11px;font-weight:500;
+  letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:5px}
+.th-name{font-family:'Oswald',sans-serif;font-size:30px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;line-height:1;margin-bottom:3px}
+.th-sub{font-size:13px;color:var(--text2);margin-bottom:14px}
+.th-meta{display:flex;gap:14px}
+.th-stat{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text2)}
+.th-stat svg{width:12px;height:12px;opacity:.6}
+.start-cta{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin:0 16px 14px;padding:15px;
+  background:var(--red);border:none;border-radius:12px;
+  font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:#fff;cursor:pointer;transition:.15s}
+.start-cta:active{background:var(--red2);transform:scale(.98)}
+.start-cta svg{width:20px;height:20px;fill:#fff}
+
+.streak-row{margin:0 16px 12px;padding:14px 16px;
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  display:flex;align-items:center;gap:12px}
+.streak-fire{font-size:26px}
+.streak-info h3{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:var(--gold)}
+.streak-info p{font-size:12px;color:var(--text2);margin-top:1px}
+
+.week-row{margin:0 16px 14px;display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.wd{display:flex;flex-direction:column;align-items:center;gap:3px}
+.wd-l{font-size:8px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--text3)}
+.wd-d{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:var(--text3);transition:.3s}
+.wd-d.done{background:var(--red);border-color:var(--red);color:#fff}
+.wd-d.today{border-color:var(--blue);color:var(--blue)}
+.wd-d.rest{opacity:.3}
+
+.wcard{margin:0 16px 10px;border-radius:var(--r);background:var(--card);
+  border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:.15s}
+.wcard:active{transform:scale(.98)}
+.wcard-top{height:110px;position:relative;display:flex;align-items:flex-end;padding:14px}
+.wcard-top.bg-blue{background:linear-gradient(135deg,#0a1e36,#0d2848)}
+.wcard-top.bg-green{background:linear-gradient(135deg,#031a0d,#052a15)}
+.wcard-top.bg-orange{background:linear-gradient(135deg,#1e0a00,#2e1000)}
+.wcard-glow{position:absolute;inset:0}
+.wcard-top.bg-blue .wcard-glow{background:radial-gradient(circle at 80% 50%,rgba(58,159,240,.18) 0%,transparent 55%)}
+.wcard-top.bg-green .wcard-glow{background:radial-gradient(circle at 80% 50%,rgba(0,224,106,.14) 0%,transparent 55%)}
+.wcard-top.bg-orange .wcard-glow{background:radial-gradient(circle at 80% 50%,rgba(255,106,43,.18) 0%,transparent 55%)}
+.wcard-nm{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;position:relative;z-index:1}
+.wcard-tag{position:absolute;top:11px;right:11px;z-index:1;
+  font-size:9px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;background:rgba(255,255,255,.1);backdrop-filter:blur(8px)}
+.wcard-bot{padding:10px 14px;display:flex;align-items:center;gap:12px}
+.wcard-st{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
+.wcard-st svg{width:12px;height:12px;opacity:.6}
+.wcard-chk{margin-left:auto;width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;
+  transition:.25s;cursor:pointer}
+.wcard-chk.done{background:var(--green);border-color:var(--green)}
+.wcard-chk svg{width:13px;height:13px;stroke:#fff;opacity:0;transition:.2s}
+.wcard-chk.done svg{opacity:1}
+
+/* ══════════════════════════════════════════
+   AI PLAN
+══════════════════════════════════════════ */
+.ai-hero{margin:0 16px 12px;padding:18px;
+  background:linear-gradient(135deg,#0d0d22,#141430);
+  border:1px solid rgba(155,109,255,.25);border-radius:var(--r)}
+.ai-hero-title{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;
+  letter-spacing:2px;text-transform:uppercase;color:var(--purple);margin-bottom:4px}
+.ai-hero p{font-size:13px;color:var(--text2);line-height:1.5}
+.ai-gen-btn{width:calc(100% - 32px);margin:0 16px 14px;padding:15px;
+  border:none;border-radius:14px;
+  background:linear-gradient(135deg,var(--purple),#6a3ddf);
+  color:#fff;font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:.15s;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.ai-gen-btn:active{transform:scale(.97)}
+.ai-gen-btn:disabled{opacity:.5;cursor:default;transform:none}
+.ai-gen-btn svg{width:18px;height:18px}
+.ai-result{margin:0 16px 14px;padding:16px;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);display:none}
+.ai-result.show{display:block}
+.ai-result-txt{font-size:13.5px;color:var(--text);line-height:1.7;white-space:pre-wrap}
+.ai-dots{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--purple);animation:blink 1.4s infinite}
+.ai-dot:nth-child(2){animation-delay:.2s}.ai-dot:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* ══════════════════════════════════════════
+   EXERCISES
+══════════════════════════════════════════ */
+.ex-filters{display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none}
+.ex-filters::-webkit-scrollbar{display:none}
+.fc{flex-shrink:0;padding:7px 13px;border-radius:30px;border:1px solid var(--border2);
+  background:none;color:var(--text2);font-family:'DM Sans',sans-serif;
+  font-size:12px;font-weight:500;cursor:pointer;transition:.18s;white-space:nowrap}
+.fc.active{background:var(--red);border-color:var(--red);color:#fff}
+.ex-row{margin:0 16px 8px;border-radius:14px;background:var(--card);
+  border:1px solid var(--border);overflow:hidden;cursor:pointer;
+  display:flex;align-items:stretch;transition:.15s}
+.ex-row:active{transform:scale(.98)}
+.ex-stripe{width:4px;flex-shrink:0}
+.ex-body{padding:13px;flex:1}
+.ex-name{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;letter-spacing:.3px}
+.ex-desc{font-size:12px;color:var(--text2);margin-top:3px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45}
+.ex-tags{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.etag{font-size:10px;font-weight:500;letter-spacing:.7px;text-transform:uppercase;
+  padding:2px 7px;border-radius:8px;background:var(--bg3);color:var(--text3)}
+.etag-eq{background:rgba(240,165,0,.1);color:var(--gold)}
+
+/* ══════════════════════════════════════════
+   METRICS
+══════════════════════════════════════════ */
+.metric-hero{margin:0 16px 14px;padding:20px;
+  background:linear-gradient(135deg,#0a1a0a,#0e2010);
+  border:1px solid rgba(0,224,106,.15);border-radius:20px}
+.metric-hero-title{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:2px;text-transform:uppercase;color:var(--green);margin-bottom:10px}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric-tile{background:rgba(0,0,0,.3);border-radius:12px;padding:12px}
+.metric-tile-val{font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;color:var(--green)}
+.metric-tile-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+.metric-tile-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.add-metric-btn{
+  width:calc(100% - 32px);margin:0 16px 14px;padding:14px;
+  border:1.5px dashed var(--border2);border-radius:14px;
+  background:none;color:var(--text2);font-family:'DM Sans',sans-serif;
+  font-size:14px;font-weight:500;cursor:pointer;transition:.18s;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.add-metric-btn:active{background:var(--bg3)}
+.metric-history{margin:0 16px 14px}
+.mh-row{display:flex;align-items:center;padding:12px 14px;
+  background:var(--card);border:1px solid var(--border);
+  border-bottom:none}
+.mh-row:first-child{border-radius:12px 12px 0 0}
+.mh-row:last-child{border-radius:0 0 12px 12px;border-bottom:1px solid var(--border)}
+.mh-row:only-child{border-radius:12px;border-bottom:1px solid var(--border)}
+.mh-date{font-size:12px;color:var(--text2);width:70px;flex-shrink:0}
+.mh-vals{flex:1;display:flex;gap:16px;flex-wrap:wrap}
+.mh-val{font-size:13px;font-weight:500}
+.mh-label{font-size:11px;color:var(--text3)}
+.mh-del{width:28px;height:28px;border-radius:50%;background:none;
+  border:1px solid var(--border2);color:var(--text3);
+  display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+/* Mini Chart */
+.mini-chart{margin:0 16px 14px;padding:16px;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r)}
+.mini-chart-title{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.chart-canvas-wrap{position:relative;height:100px}
+canvas.mini-canvas{width:100%;height:100%}
+
+/* ══════════════════════════════════════════
+   STATS / PROGRESS
+══════════════════════════════════════════ */
+.prog-ring-wrap{margin:0 16px 14px;padding:20px;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  display:flex;align-items:center;gap:18px}
+.prog-ring{position:relative;width:96px;height:96px;flex-shrink:0}
+.prog-ring svg{transform:rotate(-90deg)}
+.p-bg{fill:none;stroke:var(--border2);stroke-width:8}
+.p-arc{fill:none;stroke:var(--red);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1.2s ease}
+.p-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.p-pct{font-family:'Oswald',sans-serif;font-size:24px;font-weight:700;line-height:1}
+.p-lbl{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px}
+.prog-info h2{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700}
+.prog-info p{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 16px 14px}
+.stat-tile{padding:15px;background:var(--card);border:1px solid var(--border);border-radius:14px}
+.st-val{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700}
+.st-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+.c-red{color:var(--red)}.c-gold{color:var(--gold)}.c-blue{color:var(--blue)}.c-green{color:var(--green)}.c-purple{color:var(--purple)}
+
+.badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 16px 14px}
+.badge{padding:13px 8px;background:var(--card);border:1px solid var(--border);
+  border-radius:14px;text-align:center;transition:.2s}
+.badge.unlocked{border-color:rgba(240,165,0,.3);background:rgba(240,165,0,.05)}
+.badge-ic{font-size:26px;margin-bottom:4px}
+.badge-nm{font-size:10px;font-weight:600;letter-spacing:.4px;
+  text-transform:uppercase;color:var(--text3);line-height:1.3}
+.badge.unlocked .badge-nm{color:var(--gold)}
+.badge-lk{filter:grayscale(1);opacity:.3}
+.wbar-list{margin:0 16px 14px;display:flex;flex-direction:column;gap:8px}
+.wbar{background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.wbar-lbl{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;
+  letter-spacing:1px;text-transform:uppercase;color:var(--text3);width:56px;flex-shrink:0}
+.wbar-track{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.wbar-fill{height:100%;background:var(--red);border-radius:3px;transition:width 1.2s ease;width:0}
+.wbar-pct{font-size:12px;color:var(--text2);font-weight:600;width:34px;text-align:right}
+
+/* ══════════════════════════════════════════
+   PROFILE
+══════════════════════════════════════════ */
+.profile-hero{margin:0 16px 14px;padding:18px;
+  background:linear-gradient(135deg,#180808,#280e0e);
+  border:1px solid rgba(255,60,60,.15);border-radius:20px;
+  display:flex;align-items:center;gap:14px}
+.profile-av{width:56px;height:56px;border-radius:50%;background:var(--red);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;
+  flex-shrink:0;color:#fff}
+.profile-inf h2{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700}
+.profile-inf p{font-size:12px;color:var(--text2);margin-top:2px}
+
+.settings-list{margin:0 16px 14px;border-radius:14px;overflow:hidden;
+  border:1px solid var(--border)}
+.setting-row{padding:13px 16px;background:var(--card);
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+  border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.si{font-size:16px;width:24px;text-align:center;flex-shrink:0}
+.sl{flex:1;font-size:14px;font-weight:500}
+.sv{font-size:12px;color:var(--text2);max-width:130px;text-align:right;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sa svg{width:14px;height:14px;stroke:var(--text3)}
+
+/* ══════════════════════════════════════════
+   EDIT MODAL (Profile sections)
+══════════════════════════════════════════ */
+.edit-overlay{position:fixed;inset:0;z-index:250;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(10px);
+  display:none;flex-direction:column;animation:fadeUp .25s ease}
+.edit-overlay.open{display:flex}
+.edit-sheet{background:var(--bg2);border-radius:24px 24px 0 0;
+  border-top:1px solid var(--border);margin-top:auto;
+  max-height:88dvh;overflow-y:auto;
+  padding-bottom:calc(20px + var(--sb))}
+.edit-handle{width:36px;height:4px;background:var(--border2);
+  border-radius:2px;margin:12px auto 16px}
+.edit-title{padding:0 20px 14px;font-family:'Oswald',sans-serif;
+  font-size:20px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.edit-body{padding:0 20px}
+.edit-save{width:calc(100% - 40px);margin:16px 20px 0;padding:15px;
+  border:none;border-radius:14px;background:var(--red);color:#fff;
+  font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:.15s}
+.edit-save:active{background:var(--red2);transform:scale(.97)}
+
+/* Input fields in edit */
+.field-group{margin-bottom:16px}
+.field-label{font-size:12px;font-weight:600;letter-spacing:1px;
+  text-transform:uppercase;color:var(--text2);margin-bottom:6px}
+.field-input{width:100%;padding:12px 14px;border-radius:10px;
+  border:1px solid var(--border2);background:var(--bg3);
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;
+  outline:none;transition:.15s}
+.field-input:focus{border-color:var(--red)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-note{font-size:12px;color:var(--text3);margin-top:5px;font-style:italic}
+
+/* ══════════════════════════════════════════
+   WORKOUT SHEET
+══════════════════════════════════════════ */
+.overlay{position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(10px);
+  display:none;flex-direction:column;animation:fadeUp .25s ease}
+.overlay.open{display:flex}
+.sheet{background:var(--bg2);border-radius:24px 24px 0 0;
+  border-top:1px solid var(--border);margin-top:auto;
+  max-height:92dvh;overflow-y:auto;
+  padding-bottom:calc(20px + var(--sb))}
+.sheet-handle{width:36px;height:4px;background:var(--border2);
+  border-radius:2px;margin:12px auto 16px}
+.sheet-hero{height:170px;position:relative;display:flex;align-items:flex-end;padding:16px}
+.sh-blue{background:linear-gradient(135deg,#0a1e36,#0d2848)}
+.sh-green{background:linear-gradient(135deg,#031a0d,#052a15)}
+.sh-orange{background:linear-gradient(135deg,#1e0a00,#2e1000)}
+.sheet-title{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;position:relative;z-index:1}
+.sheet-body{padding:16px 20px}
+.sheet-stats{display:flex;background:var(--bg3);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.ss{flex:1;text-align:center;padding:13px 8px;border-right:1px solid var(--border)}
+.ss:last-child{border-right:none}
+.ss-val{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:var(--red)}
+.ss-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;margin-top:2px}
+.eli{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.eli:last-child{border-bottom:none}
+.eli-n{width:28px;height:28px;border-radius:50%;background:var(--bg3);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;color:var(--text2);flex-shrink:0}
+.eli-info .eli-name{font-weight:600;font-size:13px}
+.eli-info .eli-detail{font-size:11px;color:var(--text2);margin-top:2px}
+.sheet-start{width:calc(100% - 40px);margin:16px 20px 0;padding:16px;
+  border:none;border-radius:14px;background:var(--red);color:#fff;
+  font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:.15s}
+.sheet-start:active{background:var(--red2);transform:scale(.97)}
+
+/* ══════════════════════════════════════════
+   ACTIVE WORKOUT
+══════════════════════════════════════════ */
+#screen-workout{background:var(--bg);position:relative}
+.wo-bar{position:fixed;top:0;left:0;right:0;height:3px;background:var(--border);z-index:50}
+.wo-bar-fill{height:100%;background:var(--red);transition:width .5s ease}
+.wo-top{position:fixed;top:0;left:0;right:0;
+  padding:calc(var(--st)+12px) 20px 12px;
+  display:flex;align-items:center;justify-content:space-between;z-index:40}
+.wo-close{width:36px;height:36px;border-radius:50%;
+  background:rgba(20,20,30,.85);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(8px)}
+.wo-ctr{font-size:12px;color:var(--text2);font-weight:500;letter-spacing:.5px}
+.wo-main{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:100px 24px 20px;text-align:center}
+.wo-nm{font-family:'Oswald',sans-serif;font-size:42px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;line-height:1;margin-bottom:5px;
+  animation:slideUp .35s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.wo-det{font-size:14px;color:var(--text2);margin-bottom:28px}
+.timer-wrap{position:relative;width:180px;height:180px;margin:0 auto 24px}
+.t-svg{transform:rotate(-90deg)}
+.t-bg{fill:none;stroke:var(--border2);stroke-width:10}
+.t-ring{fill:none;stroke:var(--red);stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .95s linear}
+.t-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.t-sec{font-family:'Oswald',sans-serif;font-size:58px;font-weight:700;line-height:1}
+.t-lbl{font-size:10px;color:var(--text2);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.wo-ctrl{display:flex;gap:14px;align-items:center;justify-content:center;margin-bottom:16px}
+.wbtn{width:52px;height:52px;border-radius:50%;border:1px solid var(--border2);
+  background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s}
+.wbtn:active{transform:scale(.92)}
+.wbtn.primary{width:68px;height:68px;background:var(--red);border-color:var(--red)}
+.wbtn.primary:active{background:var(--red2)}
+.wbtn svg{width:20px;height:20px}
+.wbtn.primary svg{width:26px;height:26px}
+.next-peek{background:var(--bg3);border:1px solid var(--border);border-radius:12px;
+  padding:10px 14px;display:flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--text2);width:100%;max-width:320px;margin:0 auto}
+.next-peek strong{color:var(--text);font-size:12px}
+
+/* ══════════════════════════════════════════
+   REST & FINISH
+══════════════════════════════════════════ */
+.rest-screen,.finish-screen{
+  position:fixed;inset:0;z-index:150;display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 24px;text-align:center}
+.rest-screen.show,.finish-screen.show{display:flex;animation:fadeUp .3s ease}
+.rest-screen{background:linear-gradient(180deg,#03100a 0%,var(--bg) 100%)}
+.finish-screen{background:var(--bg)}
+.rest-h{font-family:'Oswald',sans-serif;font-size:42px;font-weight:700;
+  text-transform:uppercase;color:var(--green);margin-bottom:5px}
+.rest-sub{font-size:13px;color:var(--text2);margin-bottom:32px}
+.rest-num{font-family:'Oswald',sans-serif;font-size:90px;font-weight:700;line-height:1;margin-bottom:3px}
+.rest-sec-lbl{font-size:10px;color:var(--text2);letter-spacing:3px;text-transform:uppercase;margin-bottom:32px}
+.skip-btn{padding:12px 34px;border-radius:40px;border:1px solid var(--border2);
+  background:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer}
+.fin-em{font-size:68px;margin-bottom:14px;animation:pop 1.2s ease infinite alternate}
+@keyframes pop{from{transform:scale(1)}to{transform:scale(1.08)}}
+.fin-h{font-family:'Oswald',sans-serif;font-size:40px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.fin-sub{font-size:13px;color:var(--text2);margin-bottom:24px;max-width:260px}
+.fin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  width:100%;max-width:300px;margin-bottom:24px}
+.fin-tile{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 8px}
+.fin-v{font-family:'Oswald',sans-serif;font-size:24px;font-weight:700;color:var(--red)}
+.fin-l{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
+.fin-btn{width:100%;max-width:300px;padding:16px;border:none;border-radius:14px;
+  background:var(--red);color:#fff;font-family:'Oswald',sans-serif;
+  font-size:19px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
+
+/* ══════════════════════════════════════════
+   EXERCISE DETAIL
+══════════════════════════════════════════ */
+.ex-det-ov{position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,.92);backdrop-filter:blur(14px);
+  display:none;flex-direction:column;overflow-y:auto;
+  padding-bottom:calc(24px + var(--sb));animation:fadeUp .25s ease}
+.ex-det-ov.open{display:flex}
+.exd-hero{height:210px;position:relative;flex-shrink:0;display:flex;align-items:flex-end;padding:18px}
+.exd-close{position:absolute;top:calc(var(--st)+12px);right:14px;
+  width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.6);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.exd-nm{font-family:'Oswald',sans-serif;font-size:32px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px}
+.exd-body{padding:18px}
+.exd-sec{margin-bottom:18px}
+.exd-sec h3{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:2.5px;text-transform:uppercase;color:var(--text3);margin-bottom:7px}
+.exd-sec p{font-size:14px;color:var(--text);line-height:1.65}
+.muscle-list{display:flex;gap:7px;flex-wrap:wrap}
+.mc{padding:5px 12px;border-radius:20px;background:var(--bg3);
+  border:1px solid var(--border2);font-size:12px;font-weight:500;color:var(--text2)}
+
+/* ══════════════════════════════════════════
+   METRICS MODAL
+══════════════════════════════════════════ */
+.metric-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.mf-field{display:flex;flex-direction:column;gap:5px}
+.mf-label{font-size:11px;font-weight:600;letter-spacing:1px;
+  text-transform:uppercase;color:var(--text2)}
+.mf-input{padding:11px 12px;border-radius:10px;border:1px solid var(--border2);
+  background:var(--bg3);color:var(--text);font-family:'DM Sans',sans-serif;
+  font-size:15px;outline:none;transition:.15s}
+.mf-input:focus{border-color:var(--green)}
+
+/* ══════════════════════════════════════════
+   INSTALL BANNER
+══════════════════════════════════════════ */
+.install-bar{position:fixed;bottom:calc(70px + var(--sb));left:16px;right:16px;
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:13px 15px;display:none;align-items:center;gap:10px;z-index:90}
+.install-bar.show{display:flex;animation:fadeUp .4s ease}
+.install-bar p{flex:1;font-size:12px;color:var(--text2);line-height:1.4}
+.install-bar p strong{color:var(--text)}
+.ib-btn{padding:8px 14px;border-radius:20px;border:none;
+  background:var(--red);color:#fff;font-family:'Oswald',sans-serif;
+  font-size:13px;font-weight:700;letter-spacing:.5px;cursor:pointer;flex-shrink:0}
+.ib-x{width:26px;height:26px;border-radius:50%;background:var(--bg3);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- ══════════ ONBOARDING ══════════ -->
+<div id="screen-onboard" class="screen active">
+  <div class="ob-wrap">
+    <div class="ob-slides" id="ob-slides">
+
+      <!-- 0: Welcome -->
+      <div class="ob-slide">
+        <div class="ob-icon">🏋️</div>
+        <div class="ob-title">Willkommen bei<br/><span style="color:var(--red)">Pedro FiT</span></div>
+        <div class="ob-sub">Dein persönlicher KI-Trainer für Zuhause. Kein Studio, kein Abo — einfach loslegen.</div>
+        <div style="margin-top:12px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:14px">
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">
+            ✦ KI-generierter Trainingsplan<br/>
+            ✦ Geführte Workouts mit Timer<br/>
+            ✦ Körpermaße & Fortschritt tracken<br/>
+            ✦ 30+ Übungen inkl. Gerätetraining<br/>
+            ✦ Offline-fähig (PWA)
+          </div>
+        </div>
+      </div>
+
+      <!-- 1: Ziel -->
+      <div class="ob-slide">
+        <div class="ob-icon">🎯</div>
+        <div class="ob-title">Dein <span style="color:var(--red)">Ziel</span></div>
+        <div class="ob-sub">Wähle dein primäres Trainingsziel. Du kannst es später ändern.</div>
+        <div class="chip-grid" id="goal-chips">
+          <div class="chip" data-v="strand"><span class="chip-ic">🏖️</span> Strand-Figur</div>
+          <div class="chip" data-v="abnehmen"><span class="chip-ic">⚡</span> Abnehmen</div>
+          <div class="chip" data-v="muskel"><span class="chip-ic">💪</span> Muskelaufbau</div>
+          <div class="chip" data-v="ausdauer"><span class="chip-ic">🏃</span> Ausdauer</div>
+          <div class="chip" data-v="koerper"><span class="chip-ic">🤸</span> Körperhaltung</div>
+          <div class="chip" data-v="allgemein"><span class="chip-ic">✨</span> Allgemeine Fitness</div>
+        </div>
+      </div>
+
+      <!-- 2: Level -->
+      <div class="ob-slide">
+        <div class="ob-icon">📊</div>
+        <div class="ob-title">Dein <span style="color:var(--red)">Level</span></div>
+        <div class="ob-sub">Keine falschen Angaben — der Plan soll wirklich zu dir passen!</div>
+        <div class="level-cards" id="level-cards">
+          <div class="lcard" data-v="anfaenger"><h3>Anfänger</h3><p>Ich trainiere selten oder habe gerade erst angefangen</p></div>
+          <div class="lcard" data-v="mittel"><h3>Mittelfortgeschritten</h3><p>Ich trainiere gelegentlich und kenne die Grundübungen</p></div>
+          <div class="lcard" data-v="fortgeschritten"><h3>Fortgeschritten</h3><p>Ich trainiere regelmäßig und suche eine echte Herausforderung</p></div>
+        </div>
+      </div>
+
+      <!-- 3: Geräte -->
+      <div class="ob-slide">
+        <div class="ob-icon">🛠️</div>
+        <div class="ob-title">Deine <span style="color:var(--red)">Ausrüstung</span></div>
+        <div class="ob-sub">Mehrfachauswahl. Wähle alles was du hast — oder nichts für reines Bodyweight-Training.</div>
+
+        <div class="slbl" style="padding:10px 0 5px">Basics</div>
+        <div class="chip-grid" id="equip-chips" style="margin-bottom:10px">
+          <div class="chip" data-v="keine"><span class="chip-ic">🤸</span> Nur Bodyweight</div>
+          <div class="chip" data-v="matte"><span class="chip-ic">🟦</span> Gymnastikmatte</div>
+          <div class="chip" data-v="stuhl"><span class="chip-ic">🪑</span> Stuhl / Bank</div>
+          <div class="chip" data-v="step"><span class="chip-ic">🪜</span> Step / Plattform</div>
+          <div class="chip" data-v="foam"><span class="chip-ic">🛸</span> Foam Roller</div>
+          <div class="chip" data-v="liegestuetz"><span class="chip-ic">✋</span> Liegestützgriffe</div>
+          <div class="chip" data-v="yogablock"><span class="chip-ic">🧱</span> Yogablock</div>
+        </div>
+
+        <div class="slbl" style="padding:4px 0 5px">Freie Gewichte</div>
+        <div class="chip-grid" style="margin-bottom:10px">
+          <div class="chip" data-v="hanteln"><span class="chip-ic">🏋️</span> Kurzhanteln</div>
+          <div class="chip" data-v="langhantel"><span class="chip-ic">🏗️</span> Langhantel</div>
+          <div class="chip" data-v="kettlebell"><span class="chip-ic">🔔</span> Kettlebell</div>
+          <div class="chip" data-v="sandsack"><span class="chip-ic">🎒</span> Sandsack</div>
+          <div class="chip" data-v="medball"><span class="chip-ic">⚽</span> Medizinball</div>
+          <div class="chip" data-v="gewichtsweste"><span class="chip-ic">🦺</span> Gewichtsweste</div>
+        </div>
+
+        <div class="slbl" style="padding:4px 0 5px">Stangen & Racks</div>
+        <div class="chip-grid" style="margin-bottom:10px">
+          <div class="chip" data-v="klimmzug"><span class="chip-ic">⬆️</span> Klimmzugstange</div>
+          <div class="chip" data-v="dip"><span class="chip-ic">🔧</span> Dip-Stange / -Griffe</div>
+          <div class="chip" data-v="rack"><span class="chip-ic">🏛️</span> Barbell Rack / Power Rack</div>
+          <div class="chip" data-v="schraebank"><span class="chip-ic">📐</span> Schrägbank / Flachbank</div>
+        </div>
+
+        <div class="slbl" style="padding:4px 0 5px">Kabel, Bänder & Schlingen</div>
+        <div class="chip-grid" style="margin-bottom:10px">
+          <div class="chip" data-v="kabelzug"><span class="chip-ic">🧲</span> Kabelzug / Kabelturm</div>
+          <div class="chip" data-v="trx"><span class="chip-ic">🪝</span> TRX / Ringe</div>
+          <div class="chip" data-v="band"><span class="chip-ic">🪢</span> Widerstandsband</div>
+        </div>
+
+        <div class="slbl" style="padding:4px 0 5px">Cardio-Geräte</div>
+        <div class="chip-grid" style="margin-bottom:10px">
+          <div class="chip" data-v="springseil"><span class="chip-ic">🪅</span> Springseil</div>
+          <div class="chip" data-v="ergometer"><span class="chip-ic">🚴</span> Ergometer / Spinning-Bike</div>
+          <div class="chip" data-v="laufband"><span class="chip-ic">🏃</span> Laufband</div>
+          <div class="chip" data-v="ruder"><span class="chip-ic">🚣</span> Rudergerät</div>
+          <div class="chip" data-v="boxsack"><span class="chip-ic">🥊</span> Boxsack</div>
+          <div class="chip" data-v="bosuball"><span class="chip-ic">🔵</span> Bosu-Ball</div>
+        </div>
+
+        <div class="slbl" style="padding:4px 0 5px">+ Eigenes Gerät</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+          <input id="ob-custom-icon" placeholder="🔧" style="width:48px;padding:8px;border-radius:10px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:18px;text-align:center;outline:none"/>
+          <input id="ob-custom-name" placeholder="z.B. Yogaschaukel, Sandbag…" style="flex:1;padding:8px 11px;border-radius:10px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;font-size:13px;outline:none"/>
+          <button id="ob-custom-add" style="padding:8px 13px;border-radius:10px;border:none;background:var(--red);color:#fff;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">Hinzufügen</button>
+        </div>
+        <div id="ob-custom-list" class="chip-grid"></div>
+      </div>
+
+      <!-- 4: Ausschlüsse -->
+      <div class="ob-slide">
+        <div class="ob-icon">🚫</div>
+        <div class="ob-title">Was willst du <span style="color:var(--red)">nicht?</span></div>
+        <div class="ob-sub">Diese Übungen werden aus deinem Plan ausgeschlossen. Alles optional.</div>
+        <div class="chip-grid" id="exclude-chips">
+          <div class="chip" data-v="burpees"><span class="chip-ic">😅</span> Keine Burpees</div>
+          <div class="chip" data-v="springen"><span class="chip-ic">🦘</span> Kein Springen</div>
+          <div class="chip" data-v="laufen"><span class="chip-ic">🏃</span> Kein Laufen</div>
+          <div class="chip" data-v="kniebeugen"><span class="chip-ic">🦵</span> Keine Kniebeugen</div>
+          <div class="chip" data-v="boden"><span class="chip-ic">⬇️</span> Keine Bodenübungen</div>
+          <div class="chip" data-v="ruecken"><span class="chip-ic">🧍</span> Schonend für Rücken</div>
+          <div class="chip" data-v="knie"><span class="chip-ic">🦿</span> Schonend für Knie</div>
+        </div>
+      </div>
+
+      <!-- 5: Dauer -->
+      <div class="ob-slide">
+        <div class="ob-icon">⏱️</div>
+        <div class="ob-title">Workout-<span style="color:var(--red)">Dauer</span></div>
+        <div class="ob-sub">Wie viel Zeit hast du pro Einheit? Lieber kurz und regelmäßig als lang und selten.</div>
+        <div class="dur-row" id="dur-btns">
+          <div class="dur-btn" data-v="15"><div class="dur-val">15</div><div class="dur-lbl">Minuten</div></div>
+          <div class="dur-btn" data-v="30"><div class="dur-val">30</div><div class="dur-lbl">Minuten</div></div>
+          <div class="dur-btn" data-v="45"><div class="dur-val">45</div><div class="dur-lbl">Minuten</div></div>
+        </div>
+      </div>
+
+      <!-- 6: Körpermaße (optional) -->
+      <div class="ob-slide">
+        <div class="ob-icon">📏</div>
+        <div class="ob-title">Deine <span style="color:var(--red)">Maße</span></div>
+        <div class="ob-sub">Optional — hilft dir, Fortschritte zu messen. Du kannst das jederzeit ergänzen.</div>
+        <div class="field-row" style="margin-bottom:10px">
+          <div class="field-group">
+            <div class="field-label">Größe (cm)</div>
+            <input class="field-input" id="ob-height" type="number" placeholder="z.B. 178" inputmode="decimal"/>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Gewicht (kg)</div>
+            <input class="field-input" id="ob-weight" type="number" placeholder="z.B. 82" inputmode="decimal"/>
+          </div>
+        </div>
+        <div class="field-row" style="margin-bottom:10px">
+          <div class="field-group">
+            <div class="field-label">Alter</div>
+            <input class="field-input" id="ob-age" type="number" placeholder="z.B. 32" inputmode="numeric"/>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Geschlecht</div>
+            <div class="chip-grid" id="gender-chips" style="margin-top:0">
+              <div class="chip" data-v="m">♂ Mann</div>
+              <div class="chip" data-v="f">♀ Frau</div>
+            </div>
+          </div>
+        </div>
+        <div class="field-note">Diese Daten bleiben ausschließlich auf deinem Gerät gespeichert.</div>
+      </div>
+
+    </div>
+  </div>
+  <div class="ob-nav">
+    <button class="ob-back" id="ob-back" style="visibility:hidden">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="step-dots" id="ob-dots"></div>
+    <button class="ob-next" id="ob-next">Weiter</button>
+  </div>
+</div>
+
+<!-- ══════════ MAIN SCREENS ══════════ -->
+
+<!-- HOME -->
+<div id="screen-home" class="screen">
+  <div class="hdr">
+    <div class="hdr-row">
+      <div class="logo">Pedro <span>FiT</span></div>
+      <div class="hdr-badge" id="hdr-wk">WOCHE 1</div>
+    </div>
+  </div>
+  <div class="scroll">
+    <div id="today-wrap"></div>
+    <div class="streak-row">
+      <div class="streak-fire">🔥</div>
+      <div class="streak-info">
+        <h3 id="streak-val">0 Workouts</h3>
+        <p id="streak-sub">Starte heute!</p>
+      </div>
+    </div>
+    <div class="slbl">Diese Woche</div>
+    <div class="week-row" id="week-row"></div>
+    <div class="slbl">Alle Workouts</div>
+    <div id="all-cards"></div>
+  </div>
+</div>
+
+<!-- KI-PLAN -->
+<div id="screen-ai" class="screen">
+  <div class="hdr"><div class="hdr-row"><div class="logo">KI-<span>Plan</span></div></div></div>
+  <div class="scroll">
+    <div class="ai-hero">
+      <div class="ai-hero-title">✦ Personalisierter Plan</div>
+      <p id="ai-profile-txt">Profil wird geladen…</p>
+    </div>
+    <button class="ai-gen-btn" id="ai-gen-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Plan generieren
+    </button>
+    <div class="ai-result" id="ai-result">
+      <div class="ai-result-txt" id="ai-result-txt"></div>
+    </div>
+    <div class="slbl">Dein Profil</div>
+    <div class="settings-list" id="ai-settings"></div>
+  </div>
+</div>
+
+<!-- ÜBUNGEN -->
+<div id="screen-exercises" class="screen">
+  <div class="hdr"><div class="hdr-row"><div class="logo">Übun<span>gen</span></div></div></div>
+  <div class="ex-filters" id="ex-filters"></div>
+  <div class="scroll" style="padding-top:0" id="ex-list"></div>
+</div>
+
+<!-- METRIKEN -->
+<div id="screen-metrics" class="screen">
+  <div class="hdr">
+    <div class="hdr-row">
+      <div class="logo">Kör<span>per</span></div>
+      <button class="hdr-action" id="add-metric-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="scroll">
+    <div class="metric-hero">
+      <div class="metric-hero-title">📏 Aktuelle Werte</div>
+      <div class="metric-grid" id="metric-current"></div>
+    </div>
+    <div class="mini-chart" id="weight-chart-wrap" style="display:none">
+      <div class="mini-chart-title">Gewichtsverlauf</div>
+      <div class="chart-canvas-wrap"><canvas id="weight-canvas" class="mini-canvas"></canvas></div>
+    </div>
+    <div class="slbl">Verlauf</div>
+    <div class="metric-history" id="metric-history"></div>
+  </div>
+</div>
+
+<!-- PROFIL -->
+<div id="screen-profile" class="screen">
+  <div class="hdr"><div class="hdr-row"><div class="logo">Pro<span>fil</span></div></div></div>
+  <div class="scroll">
+    <div class="profile-hero">
+      <div class="profile-av" id="prof-av">P</div>
+      <div class="profile-inf">
+        <h2>Pedro</h2>
+        <p id="prof-tagline">–</p>
+      </div>
+    </div>
+    <div class="slbl">Training</div>
+    <div class="settings-list" id="prof-training-settings"></div>
+    <div class="slbl">Körper</div>
+    <div class="settings-list" id="prof-body-settings"></div>
+    <div class="slbl">Programm</div>
+    <div class="settings-list">
+      <div class="setting-row" id="reset-btn">
+        <span class="si">🔄</span><span class="sl">Fortschritt zurücksetzen</span>
+        <span class="sa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></span>
+      </div>
+      <div class="setting-row" id="reob-btn">
+        <span class="si">✏️</span><span class="sl">Profil neu einrichten</span>
+        <span class="sa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></span>
+      </div>
+    </div>
+    <div class="slbl" style="color:var(--text3);font-size:10px">Version 2.0 · Pedro FiT · Daten bleiben auf deinem Gerät</div>
+  </div>
+</div>
+
+<!-- ══════════ ACTIVE WORKOUT ══════════ -->
+<div id="screen-workout" class="screen">
+  <div class="wo-bar"><div class="wo-bar-fill" id="wo-fill"></div></div>
+  <div class="wo-top">
+    <div class="wo-close" id="wo-close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </div>
+    <div class="wo-ctr" id="wo-ctr">1 / 6</div>
+    <div style="width:34px"></div>
+  </div>
+  <div class="wo-main">
+    <div class="wo-nm" id="wo-nm">–</div>
+    <div class="wo-det" id="wo-det">–</div>
+    <div class="timer-wrap">
+      <svg class="t-svg" width="180" height="180" viewBox="0 0 180 180">
+        <circle class="t-bg" cx="90" cy="90" r="78"/>
+        <circle class="t-ring" id="t-ring" cx="90" cy="90" r="78"
+          stroke-dasharray="490" stroke-dashoffset="0"/>
+      </svg>
+      <div class="t-txt">
+        <div class="t-sec" id="t-sec">40</div>
+        <div class="t-lbl" id="t-lbl">Sekunden</div>
+      </div>
+    </div>
+    <div class="wo-ctrl">
+      <div class="wbtn" id="wo-prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 12H5M12 5l-7 7 7 7"/></svg></div>
+      <div class="wbtn primary" id="wo-pp">
+        <svg id="ico-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="ico-pause" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </div>
+      <div class="wbtn" id="wo-next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+    </div>
+    <div class="next-peek" id="next-peek">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Nächste: <strong id="next-nm">–</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ OVERLAYS ══════════ -->
+
+<!-- Workout Detail Sheet -->
+<div class="overlay" id="wo-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-hero" id="sh-hero">
+      <div class="sheet-title" id="sh-title">Kraft A</div>
+    </div>
+    <div class="sheet-body">
+      <div class="sheet-stats">
+        <div class="ss"><div class="ss-val" id="sh-dur">–</div><div class="ss-lbl">Dauer</div></div>
+        <div class="ss"><div class="ss-val" id="sh-ex">–</div><div class="ss-lbl">Übungen</div></div>
+        <div class="ss"><div class="ss-val" id="sh-kcal">–</div><div class="ss-lbl">~kcal</div></div>
+      </div>
+      <div id="sh-ex-list"></div>
+    </div>
+    <button class="sheet-start" id="sh-start">Workout starten</button>
+  </div>
+</div>
+
+<!-- Exercise Detail -->
+<div class="ex-det-ov" id="ex-det">
+  <div class="exd-hero" id="exd-hero">
+    <div class="exd-close" id="exd-close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </div>
+    <div class="exd-nm" id="exd-nm">–</div>
+  </div>
+  <div class="exd-body">
+    <div class="exd-sec"><h3>Ausführung</h3><p id="exd-desc">–</p></div>
+    <div class="exd-sec"><h3>Muskelgruppen</h3><div class="muscle-list" id="exd-muscles"></div></div>
+    <div class="exd-sec"><h3>Benötigt</h3><p id="exd-equip" style="color:var(--gold);font-size:13px">–</p></div>
+    <div class="exd-sec"><h3>Im Programm</h3><p id="exd-usage" style="color:var(--text2);font-size:13px">–</p></div>
+  </div>
+</div>
+
+<!-- Edit Overlay (generic) -->
+<div class="edit-overlay" id="edit-overlay">
+  <div class="edit-sheet">
+    <div class="edit-handle"></div>
+    <div class="edit-title" id="edit-title">Bearbeiten</div>
+    <div class="edit-body" id="edit-body"></div>
+    <button class="edit-save" id="edit-save">Speichern</button>
+  </div>
+</div>
+
+<!-- Metrics Add Modal -->
+<div class="edit-overlay" id="metric-overlay">
+  <div class="edit-sheet">
+    <div class="edit-handle"></div>
+    <div class="edit-title">Messung eintragen</div>
+    <div class="edit-body">
+      <div class="metric-form-grid" id="metric-form"></div>
+      <div class="field-note" style="margin-bottom:8px">Alle Felder optional — trage nur ein was du gemessen hast.</div>
+    </div>
+    <button class="edit-save" id="metric-save">Eintragen</button>
+  </div>
+</div>
+
+<!-- Rest Screen -->
+<div class="rest-screen" id="rest-screen">
+  <div class="rest-h">Pause</div>
+  <div class="rest-sub">Nächste Übung: <strong id="rest-next">–</strong></div>
+  <div class="rest-num" id="rest-num">60</div>
+  <div class="rest-sec-lbl">Sekunden</div>
+  <button class="skip-btn" id="skip-rest">Überspringen →</button>
+</div>
+
+<!-- Finish Screen -->
+<div class="finish-screen" id="fin-screen">
+  <div class="fin-em">🏆</div>
+  <div class="fin-h">Workout<br/>Done!</div>
+  <div class="fin-sub" id="fin-sub">Stark! Du bist deinem Ziel näher.</div>
+  <div class="fin-stats">
+    <div class="fin-tile"><div class="fin-v" id="fin-mins">–</div><div class="fin-l">Minuten</div></div>
+    <div class="fin-tile"><div class="fin-v" id="fin-ex">–</div><div class="fin-l">Übungen</div></div>
+    <div class="fin-tile"><div class="fin-v" id="fin-kcal">–</div><div class="fin-l">kcal</div></div>
+  </div>
+  <button class="fin-btn" id="fin-btn">Zurück</button>
+</div>
+
+<!-- Install Banner -->
+<div class="install-bar" id="install-bar">
+  <p><strong>Pedro FiT installieren</strong><br/>Als App auf dem Startbildschirm</p>
+  <button class="ib-btn" id="ib-install">Installieren</button>
+  <div class="ib-x" id="ib-dismiss">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav id="main-nav" style="display:none">
+  <button class="nb active" data-sc="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Home
+  </button>
+  <button class="nb" data-sc="ai">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    KI-Plan
+  </button>
+  <button class="nb" data-sc="exercises">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 4v16M18 4v16M3 8h4M17 8h4M3 16h4M17 16h4"/></svg>
+    Übungen
+  </button>
+  <button class="nb" data-sc="metrics">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Körper
+  </button>
+  <button class="nb" data-sc="profile">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Profil
+  </button>
+</nav>
+
+<script src="app.js"></script>
+</body>
+</html>
