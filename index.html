@@ -679,7 +679,45 @@ canvas.mini-canvas{width:100%;height:100%}
         </div>
       </div>
 
-      <!-- 5: Dauer -->
+      <!-- 5: Basketball -->
+      <div class="ob-slide">
+        <div class="ob-icon">🏀</div>
+        <div class="ob-title">Dein <span style="color:var(--red)">Basketball</span></div>
+        <div class="ob-sub">An welchen Tagen spielst du Basketball? Die App plant Gym-Workouts intelligent um deine Spieltage herum.</div>
+        <div class="chip-grid" id="bball-chips" style="margin-bottom:14px">
+          <div class="chip" data-v="Mo">Montag</div>
+          <div class="chip" data-v="Di">Dienstag</div>
+          <div class="chip" data-v="Mi">Mittwoch</div>
+          <div class="chip" data-v="Do">Donnerstag</div>
+          <div class="chip" data-v="Fr">Freitag</div>
+          <div class="chip" data-v="Sa">Samstag</div>
+          <div class="chip" data-v="So">Sonntag</div>
+        </div>
+        <div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;font-size:13px;color:var(--text2);line-height:1.6">
+          🏀 <strong style="color:var(--text)">An Basketball-Tagen</strong> empfiehlt die App Oberkörper- oder Mobility-Training.<br/>
+          🦵 <strong style="color:var(--text)">Beintraining</strong> wird automatisch auf Nicht-Basketball-Tage gelegt.
+        </div>
+      </div>
+
+      <!-- 5b: Zieltermin (optional) -->
+      <div class="ob-slide">
+        <div class="ob-icon">🎯</div>
+        <div class="ob-title">Optionaler <span style="color:var(--red)">Zieltermin</span></div>
+        <div class="ob-sub">Hast du einen Termin für den du fit sein willst? (z.B. Urlaub, Event). Komplett optional — die App läuft auch ohne.</div>
+        <div class="field-group" style="margin-bottom:12px">
+          <div class="field-label">Bezeichnung</div>
+          <input class="field-input" id="ob-tgt-label" type="text" placeholder="z.B. Sommerurlaub, Strandsaison…"/>
+        </div>
+        <div class="field-group" style="margin-bottom:12px">
+          <div class="field-label">Datum (optional)</div>
+          <input class="field-input" id="ob-tgt-date" type="date"/>
+        </div>
+        <div style="padding:14px;background:var(--card);border:1px solid var(--border);border-radius:14px;font-size:13px;color:var(--text2);line-height:1.6">
+          ⚡ Die App zeigt dir wie viele Tage noch bleiben und passt die Intensität an — aber kein Druck! Du kannst diesen Termin jederzeit ändern oder löschen.
+        </div>
+      </div>
+
+      <!-- 6: Dauer -->
       <div class="ob-slide">
         <div class="ob-icon">⏱️</div>
         <div class="ob-title">Workout-<span style="color:var(--red)">Dauer</span></div>
@@ -740,7 +778,7 @@ canvas.mini-canvas{width:100%;height:100%}
   <div class="hdr">
     <div class="hdr-row">
       <div class="logo">Pedro <span>FiT</span></div>
-      <div class="hdr-badge" id="hdr-wk">WOCHE 1</div>
+      <div class="hdr-badge" id="hdr-wk">HEUTE</div>
     </div>
   </div>
   <div class="scroll">

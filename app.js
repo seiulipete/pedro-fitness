@@ -320,26 +320,95 @@ const exById = id => EX.find(e => e.id === id);
 
 /* ── 4. WORKOUT TEMPLATES ── */
 const WORKOUTS = [
-  { id:'kraftA', name:'Kraft A',  sub:'Oberkörper & Core',    heroClass:'sh-blue',   cardClass:'bg-blue',   calories:200,
-    exercises:['pushup','pikepush','dips','plank','hollow','superman'] },
-  { id:'kraftB', name:'Kraft B',  sub:'Unterkörper & Gesäß',  heroClass:'sh-green',  cardClass:'bg-green',  calories:220,
-    exercises:['squat','lunge','glute','wallsit','donkey','calf'] },
-  { id:'circuit',name:'Circuit',  sub:'Cardio & Ganzkörper',  heroClass:'sh-orange', cardClass:'bg-orange', calories:280,
-    exercises:['jj','burpee','mountain','highknee','jsquat','skater'] },
+  { id:'kraftA',    name:'Kraft A',         sub:'Oberkörper & Core',       heroClass:'sh-blue',   cardClass:'bg-blue',   calories:200, tag:'KRAFT',
+    exercises:['pushup','pikepush','dips','plank','hollow','superman'],
+    basketballCompat: true },
+  { id:'kraftB',    name:'Kraft B',         sub:'Unterkörper & Gesäß',     heroClass:'sh-green',  cardClass:'bg-green',  calories:220, tag:'KRAFT',
+    exercises:['squat','lunge','glute','wallsit','donkey','calf'],
+    basketballCompat: false },  // avoid after basketball (leg fatigue)
+  { id:'circuit',   name:'Circuit',         sub:'Cardio & Ganzkörper',     heroClass:'sh-orange', cardClass:'bg-orange', calories:280, tag:'CARDIO',
+    exercises:['jj','burpee','mountain','highknee','jsquat','skater'],
+    basketballCompat: false },
+  { id:'bball',     name:'Basketball Athletik', sub:'Explosivkraft & Sprung', heroClass:'sh-orange', cardClass:'bg-orange', calories:260, tag:'ATHLETIK',
+    exercises:['jsquat','lunge','calf','plank','sidepl','highknee'],
+    basketballCompat: true },
+  { id:'mobility',  name:'Mobility & Recovery', sub:'Dehnen & Regeneration', heroClass:'sh-green',  cardClass:'bg-green',  calories:80,  tag:'RECOVERY',
+    exercises:['cobra','hipstretch','foamroll','sidepl','hollow'],
+    basketballCompat: true },   // perfect after basketball
 ];
 
-/* ── 5. SCHEDULE (6 weeks × 4 sessions) ── */
-const SCHEDULE = (() => {
-  const plan = ['kraftA','circuit','kraftB','circuit'];
-  return Array.from({length:6},(_,w)=>plan.map((wid,s)=>({wk:w+1,slot:s,wid}))).flat()
-    .map((s,i)=>({...s,i}));
-})();
+const dayShort = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const dayFull  = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'];
 
-const slotDayMap = ['Mo','Di','Do','Fr'];
-const dayShort   = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+/* ── 5. FLEXIBLE SCHEDULING HELPERS ── */
 
-const week = () => Math.min(6, Math.max(1,
-  Math.floor((Date.now() - new Date(S.startDate).getTime()) / 86400000 / 7) + 1));
+// Current week number (rolling, no end)
+const currentWeekNum = () => {
+  const start = S.done.length>0
+    ? new Date(S.done[0].date||new Date())
+    : new Date();
+  return Math.floor((Date.now() - start.getTime()) / 86400000 / 7) + 1;
+};
+
+// Days until target date
+const daysToTarget = () => {
+  if(!S.targetDate) return null;
+  const diff = Math.ceil((new Date(S.targetDate) - new Date()) / 86400000);
+  return Math.max(0, diff);
+};
+
+// Is today a basketball day?
+const isBballDay = () => S.basketballDays.includes(dayShort[new Date().getDay()]);
+
+// Is coach season active? (Oct=9 to May=4)
+const isCoachSeason = () => {
+  const m = new Date().getMonth();
+  return m >= 9 || m <= 4;
+};
+
+// Smart workout suggestion for today
+const suggestWorkout = () => {
+  const recent = (S.lastWorkouts||[]).slice(-3).map(w=>w.wid);
+  const bball   = isBballDay();
+  const legsTired = recent.some(w=>w==='kraftB'||w==='circuit');
+  const armsTired = recent.some(w=>w==='kraftA');
+  const hadMobility = recent.some(w=>w==='mobility');
+
+  if(bball) {
+    // Basketball day → short mobility or upper body only
+    if(!armsTired) return {wid:'kraftA', reason:'🏀 Basketball-Tag — Oberkörper passt gut'};
+    return {wid:'mobility', reason:'🏀 Basketball-Tag — Mobility & Recovery empfohlen'};
+  }
+  // After basketball yesterday
+  const yesterday = dayShort[(new Date().getDay()+6)%7];
+  const bbYesterday = S.basketballDays.includes(yesterday);
+  if(bbYesterday && !hadMobility) return {wid:'mobility', reason:'🏀 Nach Basketball — Regeneration empfohlen'};
+
+  // Normal rotation
+  if(!armsTired) return {wid:'kraftA', reason:'💪 Oberkörper ist bereit'};
+  if(!legsTired) return {wid:'kraftB', reason:'🦵 Beine als nächstes dran'};
+  return {wid:'bball', reason:'🏀 Basketball Athletik — Explosivkraft'};
+};
+
+// Weekly load: gym sessions this week
+const weeklyGymLoad = () => {
+  const monday = new Date();
+  monday.setDate(monday.getDate() - ((monday.getDay()+6)%7));
+  monday.setHours(0,0,0,0);
+  return (S.done||[]).filter(d => new Date(d.date||d) >= monday).length;
+};
+
+// Total weekly load including basketball
+const weeklyTotalLoad = () => {
+  const gym = weeklyGymLoad();
+  // Estimate basketball days this week that already passed
+  const todayIdx = new Date().getDay();
+  const bbThisWeek = S.basketballDays.filter(d=>{
+    const di = dayShort.indexOf(d);
+    return di>0 && di<=todayIdx; // Mon–today
+  }).length;
+  return gym + bbThisWeek;
+};
 
 /* ── 6. LABELS ── */
 const GOAL_LBL   = {strand:'Strand-Figur',abnehmen:'Abnehmen',muskel:'Muskelaufbau',ausdauer:'Ausdauer',koerper:'Körperhaltung',allgemein:'Allgemeine Fitness'};
@@ -371,12 +440,28 @@ const equipLabel = (id) => {
 };
 
 const ACHIEVEMENTS = [
-  {id:'first',  icon:'🎯', name:'Erstes\nWorkout',      check: s=>s.done.length>=1},
-  {id:'week1',  icon:'📅', name:'Woche 1\ngeschafft',   check: s=>SCHEDULE.filter(x=>x.wk===1&&s.done.includes(x.i)).length>=4},
-  {id:'s3',     icon:'🔥', name:'3er Streak',            check: s=>s.done.length>=3},
-  {id:'s10',    icon:'💯', name:'10 Workouts',           check: s=>s.done.length>=10},
-  {id:'half',   icon:'⚡', name:'Halbzeit!',              check: s=>s.done.length>=12},
-  {id:'finish', icon:'🏆', name:'Programm\nbeendet',    check: s=>s.done.length>=24},
+  {id:'first',    icon:'🎯', name:'Erstes\nWorkout',       check: s=>s.done.length>=1},
+  {id:'s5',       icon:'🔥', name:'5 Workouts',             check: s=>s.done.length>=5},
+  {id:'s10',      icon:'💯', name:'10 Workouts',            check: s=>s.done.length>=10},
+  {id:'s25',      icon:'⚡', name:'25 Workouts',            check: s=>s.done.length>=25},
+  {id:'s50',      icon:'🏆', name:'50 Workouts',            check: s=>s.done.length>=50},
+  {id:'bball',    icon:'🏀', name:'Basketball\nAthlet',    check: s=>s.done.filter(d=>(d.wid||d)==='bball').length>=5},
+  {id:'mobility', icon:'🧘', name:'Recovery\nKönig',       check: s=>s.done.filter(d=>(d.wid||d)==='mobility').length>=5},
+  {id:'month',    icon:'📅', name:'1 Monat\ndabei!',       check: s=>s.done.length>=12},
+  {id:'streak7',  icon:'🌟', name:'7-Tage\nStreak',        check: s=>{
+    // check 7 consecutive days with at least one workout
+    const dates = s.done.map(d=>d.date||d).sort();
+    if(dates.length<7) return false;
+    for(let i=dates.length-1;i>=6;i--){
+      let streak=1;
+      for(let j=i-1;j>=0&&streak<7;j--){
+        const diff=(new Date(dates[i-streak+1])-new Date(dates[i-streak]))/86400000;
+        if(diff<=1) streak++; else break;
+      }
+      if(streak>=7) return true;
+    }
+    return false;
+  }},
 ];
 
 /* ════════════════════════════════════════════
@@ -402,7 +487,7 @@ document.querySelectorAll('.nb').forEach(btn =>
 /* ════════════════════════════════════════════
    ONBOARDING
 ════════════════════════════════════════════ */
-const OB_COUNT = 7;
+const OB_COUNT = 9;
 let obStep = 0;
 
 function obRender() {
@@ -503,6 +588,19 @@ function initOBEquipment() {
 }
 initOBEquipment();
 
+// Basketball days
+multiChips('bball-chips','basketballDays');
+
+// Target date in onboarding — collect on finish
+const obCollectTarget = () => {
+  const label = document.getElementById('ob-tgt-label')?.value.trim();
+  const date  = document.getElementById('ob-tgt-date')?.value;
+  if(label) S.targetLabel = label;
+  if(date)  S.targetDate  = date;
+};
+// Hook into finishOnboard
+const _origFinish = finishOnboard;
+
 document.getElementById('ob-next').addEventListener('click', () => {
   if(obStep < OB_COUNT-1) { obStep++; obRender(); }
   else finishOnboard();
@@ -529,6 +627,11 @@ function collectOBMetrics() {
 
 function finishOnboard() {
   collectOBMetrics();
+  // Collect target date
+  const tgtLabel = document.getElementById('ob-tgt-label')?.value.trim();
+  const tgtDate  = document.getElementById('ob-tgt-date')?.value;
+  if(tgtLabel) S.targetLabel = tgtLabel;
+  if(tgtDate)  S.targetDate  = tgtDate;
   S.onboarded = true; save();
   document.getElementById('screen-onboard').classList.remove('active');
   document.getElementById('main-nav').style.display = 'flex';
@@ -546,96 +649,131 @@ if(S.onboarded) {
    HOME
 ════════════════════════════════════════════ */
 function renderHome() {
-  const wk = week();
-  document.getElementById('hdr-wk').textContent = `WOCHE ${wk}`;
+  const todayIdx = new Date().getDay();
+  const bball    = isBballDay();
+  const gym      = weeklyGymLoad();
+  const total    = weeklyTotalLoad();
+  const suggest  = suggestWorkout();
+  const dtarget  = daysToTarget();
+
+  // Header
+  document.getElementById('hdr-wk').textContent = bball ? '🏀 BASKETBALL' : 'HEUTE TRAINIEREN';
+
+  // Streak row
   document.getElementById('streak-val').textContent = `${S.done.length} Workouts`;
   document.getElementById('streak-sub').textContent = S.done.length > 0
-    ? `${S.done.length} von 24 erledigt — weiter so!`
-    : 'Starte heute deinen ersten Streak!';
+    ? `Diese Woche: ${gym} Gym-Session${gym!==1?'s':''} + ${weeklyTotalLoad()-gym} Basketball`
+    : 'Starte heute deinen ersten Workout!';
 
-  // Week dots
-  const todayIdx = new Date().getDay();
-  const wkSched  = SCHEDULE.filter(s => s.wk === wk);
+  // Target date banner
+  const wrap = document.getElementById('today-wrap');
+  let targetBanner = '';
+  if(dtarget !== null) {
+    const col = dtarget < 14 ? 'var(--red)' : dtarget < 30 ? 'var(--gold)' : 'var(--blue)';
+    targetBanner = `<div style="margin:0 16px 12px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:22px">🎯</div>
+      <div>
+        <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">${S.targetLabel||'Zieltermin'}</div>
+        <div style="font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:${col}">${dtarget === 0 ? 'Heute!' : dtarget + ' Tage noch'}</div>
+      </div>
+    </div>`;
+  }
+
+  // Weekly load bar
+  const loadPct = Math.min(100, Math.round(total / (S.weeklyLoadGoal + S.basketballDays.length) * 100));
+  const loadColor = loadPct >= 100 ? 'var(--green)' : loadPct >= 60 ? 'var(--gold)' : 'var(--red)';
+  const loadBanner = `<div style="margin:0 16px 12px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <span style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Wochenbelastung</span>
+      <span style="font-size:11px;font-weight:600;color:${loadColor}">${total} / ${S.weeklyLoadGoal + S.basketballDays.length} Einheiten</span>
+    </div>
+    <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+      <div style="height:100%;width:${loadPct}%;background:${loadColor};border-radius:3px;transition:width 1s ease"></div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <span style="font-size:11px;color:var(--text2)">🏋️ ${gym} Gym</span>
+      <span style="font-size:11px;color:var(--text2)">🏀 ${total-gym} Basketball</span>
+      ${isCoachSeason()?'<span style="font-size:11px;color:var(--purple)">🎽 Trainer-Saison</span>':''}
+    </div>
+  </div>`;
+
+  // Today suggestion hero
+  const suggW = WORKOUTS.find(x=>x.id===suggest.wid);
+  const todayDoneToday = (S.done||[]).some(d=>(d.date||d)===new Date().toISOString().split('T')[0]);
+  const heroHTML = `
+    <div class="today-hero" id="th">
+      <div class="th-body">
+        <div class="th-tag">${todayDoneToday?'✓ HEUTE ERLEDIGT':'● EMPFEHLUNG HEUTE'}</div>
+        <div class="th-name">${suggW.name}</div>
+        <div class="th-sub">${suggest.reason}</div>
+        <div class="th-meta">
+          <div class="th-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${S.duration} Min</div>
+          <div class="th-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 4v16M18 4v16M3 8h4M17 8h4M3 16h4M17 16h4"/></svg>${suggW.exercises.length} Übungen</div>
+          <div class="th-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>~${suggW.calories} kcal</div>
+        </div>
+      </div>
+    </div>
+    <button class="start-cta" id="th-cta">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      ${todayDoneToday?'Nochmal trainieren':'Jetzt starten'}
+    </button>`;
+
+  wrap.innerHTML = targetBanner + loadBanner + heroHTML;
+  document.getElementById('th')?.addEventListener('click', ()=>openSheet(suggW, -1));
+  document.getElementById('th-cta')?.addEventListener('click', ()=>openSheet(suggW, -1));
+
+  // Week dots — show gym done + basketball days
+  const monday = new Date(); monday.setDate(monday.getDate()-((monday.getDay()+6)%7)); monday.setHours(0,0,0,0);
+  const doneThisWeek = (S.done||[]).filter(d=>new Date(d.date||d)>=monday);
   const wr = document.getElementById('week-row'); wr.innerHTML='';
   dayShort.forEach((d,i) => {
-    const entry = wkSched.find(s => slotDayMap[s.slot]===d);
-    const done  = entry && S.done.includes(entry.i);
-    const isT   = i === todayIdx;
+    const isBball = S.basketballDays.includes(d);
+    const dayDate = new Date(monday); dayDate.setDate(monday.getDate()+((i+6)%7));
+    const dayStr  = dayDate.toISOString().split('T')[0];
+    const gymDone = doneThisWeek.some(x=>(x.date||x)===dayStr);
+    const isT     = i === todayIdx;
+    const isPast  = dayDate < new Date() && !isT;
+    let cls='', label='';
+    if(gymDone){ cls='done'; label='✓'; }
+    else if(isBball){ cls='today'; label='🏀'; }
+    else if(isT){ cls='today'; label=''; }
+    else if(isPast&&!isBball){ cls='rest'; label='–'; }
     const el = document.createElement('div'); el.className='wd';
-    el.innerHTML=`<div class="wd-l">${d}</div>
-      <div class="wd-d ${done?'done':!entry?'rest':isT?'today':''}">${done?'✓':!entry?'–':''}</div>`;
+    el.innerHTML=`<div class="wd-l">${d}</div><div class="wd-d ${cls}">${label}</div>`;
     wr.appendChild(el);
   });
 
-  // Today hero
-  const todayD  = dayShort[todayIdx];
-  const todayE  = wkSched.find(s => slotDayMap[s.slot]===todayD);
-  const wrap    = document.getElementById('today-wrap');
-  if(todayE) {
-    const w = WORKOUTS.find(x=>x.id===todayE.wid);
-    const done = S.done.includes(todayE.i);
-    wrap.innerHTML=`
-      <div class="today-hero" id="th">
-        <div class="th-body">
-          <div class="th-tag">${done?'✓ ERLEDIGT':'● HEUTE'}</div>
-          <div class="th-name">${w.name}</div>
-          <div class="th-sub">${w.sub}</div>
-          <div class="th-meta">
-            <div class="th-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${S.duration} Min</div>
-            <div class="th-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 4v16M18 4v16M3 8h4M17 8h4M3 16h4M17 16h4"/></svg>${w.exercises.length} Übungen</div>
-            <div class="th-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>~${w.calories} kcal</div>
-          </div>
-        </div>
-      </div>
-      <button class="start-cta" id="th-cta">
-        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        ${done?'Nochmal starten':'Jetzt starten'}
-      </button>`;
-    document.getElementById('th').addEventListener('click', ()=>openSheet(w,todayE.i));
-    document.getElementById('th-cta').addEventListener('click', ()=>openSheet(w,todayE.i));
-  } else {
-    wrap.innerHTML=`<div style="margin:0 16px 12px;padding:20px;background:var(--bg3);border-radius:20px;border:1px solid var(--border);text-align:center">
-      <div style="font-size:34px;margin-bottom:8px">🛋️</div>
-      <div style="font-family:'Oswald',sans-serif;font-size:18px;font-weight:700">Ruhetag</div>
-      <div style="font-size:13px;color:var(--text2);margin-top:4px">Erholung ist Teil des Trainings!</div></div>`;
-  }
-
-  // All workout cards
+  // All workout cards — rolling total
   const allEl = document.getElementById('all-cards'); allEl.innerHTML='';
   WORKOUTS.forEach(w => {
-    const entries = SCHEDULE.filter(s=>s.wid===w.id);
-    const nextE   = entries.find(s=>!S.done.includes(s.i));
-    const doneN   = entries.filter(s=>S.done.includes(s.i)).length;
+    const doneN = (S.done||[]).filter(d=>(d.wid||d)===w.id).length;
     const div = document.createElement('div');
-    div.innerHTML = wcardHTML(w, doneN, entries.length);
-    const card = div.querySelector('.wcard');
-    card.addEventListener('click', ()=>openSheet(w, nextE?.i??-1));
-    const chk = card.querySelector('.wcard-chk');
-    if(chk && nextE) chk.addEventListener('click', e=>{e.stopPropagation();toggleDone(nextE.i);});
+    div.innerHTML = wcardHTML(w, doneN);
+    div.querySelector('.wcard').addEventListener('click', ()=>openSheet(w, -1));
     allEl.appendChild(div);
   });
 }
 
-function wcardHTML(w, done, total) {
+function wcardHTML(w, doneCount=0) {
+  const tagColors = {KRAFT:'var(--blue)',CARDIO:'var(--orange)',ATHLETIK:'var(--gold)',RECOVERY:'var(--green)'};
+  const tagCol = tagColors[w.tag]||'var(--text2)';
   return `<div class="wcard">
     <div class="wcard-top ${w.cardClass}">
       <div class="wcard-glow"></div>
-      <div class="wcard-tag">${w.sub}</div>
+      <div class="wcard-tag" style="color:white">${w.sub}</div>
       <div class="wcard-nm">${w.name}</div>
     </div>
     <div class="wcard-bot">
       <div class="wcard-st"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${S.duration} Min</div>
       <div class="wcard-st"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 4v16M18 4v16M3 8h4M17 8h4M3 16h4M17 16h4"/></svg>${w.exercises.length} Üb.</div>
-      <div class="wcard-st" style="color:var(--text3)">${done}/${total}</div>
-      <div class="wcard-chk${done>=total?' done':''}">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
-      </div>
+      <div class="wcard-st" style="color:${tagCol};font-weight:600">${w.tag}</div>
+      <div class="wcard-st" style="color:var(--text3);margin-left:auto">${doneCount}× gemacht</div>
     </div>
   </div>`;
 }
 
 function toggleDone(idx) {
-  S.done.includes(idx) ? S.done=S.done.filter(i=>i!==idx) : S.done.push(idx);
+  // Legacy compat — not used in new system
   save(); renderHome();
 }
 
@@ -744,7 +882,14 @@ function finishWO(){
   document.getElementById('fin-ex').textContent=_cW.exercises.length;
   document.getElementById('fin-kcal').textContent='~'+_cW.calories;
   document.getElementById('fin-screen').classList.add('show');
-  if(_cIdx>=0&&!S.done.includes(_cIdx)){S.done.push(_cIdx);save();}
+  // Log workout with metadata (rolling, no index)
+  const entry = {date:new Date().toISOString().split('T')[0], wid:_cW.id, mins:mins, kcal:_cW.calories};
+  S.done = S.done||[];
+  S.done.push(entry);
+  S.lastWorkouts = S.lastWorkouts||[];
+  S.lastWorkouts.push({date:entry.date, wid:_cW.id});
+  if(S.lastWorkouts.length>14) S.lastWorkouts=S.lastWorkouts.slice(-14);
+  save();
 }
 function closeWO(){
   clearInterval(WS.timer);WS.running=false;
@@ -929,12 +1074,19 @@ function renderProfile() {
     `${GOAL_LBL[S.goal]||'–'} · ${LEVEL_LBL[S.level]||'–'}`;
 
   // Training settings
+  const bbDayStr = S.basketballDays.length ? S.basketballDays.join(', ') : 'Keine';
+  const targetStr = S.targetDate
+    ? `${S.targetLabel||'Ziel'}: ${new Date(S.targetDate).toLocaleDateString('de-DE',{day:'numeric',month:'short'})}`
+    : 'Kein Termin gesetzt';
   document.getElementById('prof-training-settings').innerHTML = [
-    {icon:'🎯',label:'Ziel',     val:GOAL_LBL[S.goal]||'–',     key:'goal'},
-    {icon:'📊',label:'Level',    val:LEVEL_LBL[S.level]||'–',   key:'level'},
-    {icon:'⏱️',label:'Dauer',    val:S.duration+'Min',            key:'duration'},
-    {icon:'🛠️',label:'Ausrüstung',val:equipStr,                  key:'equipment'},
+    {icon:'🎯',label:'Fitnessziel',val:GOAL_LBL[S.goal]||'–',   key:'goal'},
+    {icon:'📊',label:'Level',      val:LEVEL_LBL[S.level]||'–', key:'level'},
+    {icon:'⏱️',label:'Dauer',      val:S.duration+' Min',        key:'duration'},
+    {icon:'🛠️',label:'Ausrüstung', val:equipStr,                 key:'equipment'},
     {icon:'🚫',label:'Ausschlüsse',val:S.exclude.length?S.exclude.join(', '):'Keine', key:'exclude'},
+    {icon:'🏀',label:'Basketball-Tage', val:bbDayStr,            key:'basketball'},
+    {icon:'🎯',label:'Zieltermin', val:targetStr,                key:'targetdate'},
+    {icon:'💪',label:'Gym-Ziel/Woche', val:S.weeklyLoadGoal+' Sessions', key:'weeklygoal'},
   ].map(r=>`
     <div class="setting-row" data-key="${r.key}">
       <span class="si">${r.icon}</span>
@@ -1046,6 +1198,52 @@ function openEditPanel(key) {
       `<div class="chip${S.exclude.includes(v)?' sel':''}" data-v="${v}">${l}</div>`).join('')}</div>`;
     multiChips2('ep-excl','exclude');
     saveHandler=()=>{};
+  } else if(key==='basketball') {
+    body.innerHTML=`
+      <div class="ob-sub" style="margin-bottom:12px">An welchen Tagen spielst du Basketball? (Mehrfachauswahl)</div>
+      <div class="chip-grid" id="ep-bball">${['Mo','Di','Mi','Do','Fr','Sa','So'].map(d=>
+        `<div class="chip${(S.basketballDays||[]).includes(d)?' sel':''}" data-v="${d}">${d}</div>`).join('')}</div>
+      <div style="margin-top:16px;padding:12px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--text2);line-height:1.5">
+        🏀 Basketball-Tage beeinflussen die tägliche Workout-Empfehlung. An diesen Tagen empfiehlt die App Oberkörper oder Mobility statt Beintraining.
+      </div>`;
+    multiChips2('ep-bball','basketballDays');
+    saveHandler=()=>{};
+  } else if(key==='targetdate') {
+    const cur = S.targetDate||'';
+    body.innerHTML=`
+      <div class="field-group">
+        <div class="field-label">Bezeichnung (z.B. Sommerurlaub, Strand)</div>
+        <input class="field-input" id="ep-tgt-label" type="text" value="${S.targetLabel||''}" placeholder="z.B. Urlaub Kroatien"/>
+      </div>
+      <div class="field-group" style="margin-top:12px">
+        <div class="field-label">Zieldatum (optional)</div>
+        <input class="field-input" id="ep-tgt-date" type="date" value="${cur}" min="${new Date().toISOString().split('T')[0]}"/>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button id="ep-tgt-clear" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border2);background:none;color:var(--text2);cursor:pointer;font-size:14px">Termin löschen</button>
+      </div>`;
+    document.getElementById('ep-tgt-clear')?.addEventListener('click',()=>{
+      S.targetDate=null;S.targetLabel=null;save();
+      document.getElementById('edit-overlay').classList.remove('open');renderProfile();renderHome();
+    });
+    saveHandler=()=>{
+      const label=document.getElementById('ep-tgt-label')?.value.trim();
+      const date=document.getElementById('ep-tgt-date')?.value;
+      S.targetLabel=label||null;
+      S.targetDate=date||null;
+    };
+  } else if(key==='weeklygoal') {
+    body.innerHTML=`
+      <div class="ob-sub" style="margin-bottom:12px">Wie viele Gym-Sessions pro Woche willst du schaffen?</div>
+      <div class="dur-row">${[2,3,4,5].map(v=>
+        `<div class="dur-btn${S.weeklyLoadGoal===v?' sel':''}" data-v="${v}"><div class="dur-val">${v}</div><div class="dur-lbl">Sessions</div></div>`).join('')}</div>
+      <div style="margin-top:12px;padding:12px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--text2);line-height:1.5">
+        💡 Deine Basketball-Tage zählen als separate Aktivität — das Gym-Ziel ist zusätzlich dazu.
+      </div>`;
+    body.querySelectorAll('.dur-btn').forEach(c=>c.addEventListener('click',()=>{
+      body.querySelectorAll('.dur-btn').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');
+    }));
+    saveHandler=()=>{const s=body.querySelector('.dur-btn.sel');if(s)S.weeklyLoadGoal=parseInt(s.dataset.v);};
   } else if(['height','weight','age'].includes(key)) {
     const labels={height:'Größe (cm)',weight:'Gewicht (kg)',age:'Alter'};
     body.innerHTML=`<div class="field-group">
@@ -1102,7 +1300,7 @@ document.getElementById('edit-overlay').addEventListener('click',e=>{
 });
 document.getElementById('reset-btn').addEventListener('click',()=>{
   if(confirm('Trainings-Fortschritt wirklich zurücksetzen?')){
-    S.done=[];S.startDate=new Date().toISOString().split('T')[0];save();renderHome();
+    S.done=[];S.lastWorkouts=[];save();renderHome();
   }
 });
 document.getElementById('reob-btn').addEventListener('click',()=>{
@@ -1141,7 +1339,11 @@ document.getElementById('ai-gen-btn').addEventListener('click', async () => {
   txt.innerHTML=`<div class="ai-dots"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span>KI analysiert dein Profil…</span></div>`;
 
   const equipStr=S.equipment.map(e=>equipLabel(e)).join(', ')||'nur Bodyweight (kein Gerät)';
-  const bodyStr=S.height&&S.weight?`Körpergröße: ${S.height}cm, Gewicht: ${S.weight}kg`:'';
+  const bodyStr=S.height&&S.weight?`Körpergröße: ${S.height}cm, Gewicht: ${S.weight}kg`:''
+  const bbStr=S.basketballDays.length
+    ? `Basketball: ${S.basketballDays.join(', ')} (${S.basketballDays.length}×/Woche) — zählt als Cardio-Einheit`
+    : 'Kein Basketball'
+  const seasonStr=isCoachSeason()?'Aktuell Trainer-Saison (Okt–Mai): 2×/Woche Minibasket-Training zusätzlich':'Sommersaison: bis zu 4×/Woche Basketball möglich';
   const exclStr=S.exclude.length?`Ausgeschlossen: ${S.exclude.join(', ')}`:' keine Ausschlüsse';
 
   const prompt=`Du bist ein erfahrener Personal-Trainer. Erstelle einen sehr detaillierten, motivierenden 6-Wochen-Trainingsplan für Zuhause auf Deutsch.
