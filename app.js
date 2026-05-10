@@ -5,6 +5,14 @@
 
 'use strict';
 
+// Global error handler — prevents silent blank screen
+window.addEventListener('error', e => {
+  console.error('Pedro FiT error:', e.message, e.filename, e.lineno);
+});
+window.addEventListener('unhandledrejection', e => {
+  console.error('Pedro FiT async error:', e.reason);
+});
+
 /* ── 1. DATA LAYER (swap localStorage → Supabase here) ── */
 const DB = {
   KEY: 'pedrofit_v2',
@@ -25,7 +33,24 @@ const defaultState = () => ({
   customEquipment: [],  // [{id, label, icon}] — user-defined devices
 });
 
-let S = DB.get() || defaultState();
+let S = (() => {
+  try {
+    const raw = DB.get();
+    if(!raw) return defaultState();
+    // Migration: old format had done as array of numbers, new format has objects
+    if(raw.done && raw.done.length > 0 && typeof raw.done[0] === 'number') {
+      console.log('Pedro FiT: Migrating old data format…');
+      raw.done = []; // reset old numeric done array
+    }
+    // Ensure all new fields exist
+    const def = defaultState();
+    Object.keys(def).forEach(k => { if(raw[k] === undefined) raw[k] = def[k]; });
+    return raw;
+  } catch(e) {
+    console.warn('Pedro FiT: State error, resetting.', e);
+    return defaultState();
+  }
+})();
 const save = () => DB.save(S);
 
 /* ── 3. EXERCISE DATA ── */
@@ -640,9 +665,22 @@ function finishOnboard() {
 
 obRender();
 if(S.onboarded) {
-  document.getElementById('screen-onboard').classList.remove('active');
-  document.getElementById('main-nav').style.display = 'flex';
-  showScreen('home');
+  try {
+    document.getElementById('screen-onboard').classList.remove('active');
+    document.getElementById('main-nav').style.display = 'flex';
+    showScreen('home');
+  } catch(e) {
+    console.error('Pedro FiT boot error:', e);
+    // Show a recovery message instead of blank screen
+    document.body.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;padding:32px;text-align:center;background:#080810;color:#f0f0ff;font-family:sans-serif">
+        <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+        <div style="font-size:22px;font-weight:700;margin-bottom:8px">Etwas ist schiefgelaufen</div>
+        <div style="font-size:14px;color:#7878a0;margin-bottom:32px;line-height:1.5">Die App-Daten konnten nicht geladen werden.<br/>Einmal zurücksetzen behebt das Problem.</div>
+        <button onclick="localStorage.removeItem('pedrofit_v2');location.reload()" style="padding:16px 32px;background:#ff3c3c;border:none;border-radius:14px;color:white;font-size:18px;font-weight:700;cursor:pointer">App zurücksetzen & neu starten</button>
+        <div style="margin-top:12px;font-size:12px;color:#45455a">Deine Körpermaße bleiben erhalten.</div>
+      </div>`;
+  }
 }
 
 /* ════════════════════════════════════════════
