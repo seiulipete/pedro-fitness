@@ -343,6 +343,33 @@ const EX = [
 
 const exById = id => EX.find(e => e.id === id);
 
+/* ── SKETCHES: kategorie-basierte Strichmännchen-Posen ── */
+const CAT_POSE = {
+  'Oberkörper':'pushup','Schrägbank':'pushup','Gewichtsweste':'squat',
+  'Core':'plank','Rücken':'backext',
+  'Beine':'squat','Gesäß':'squat',
+  'Klimmzug':'pullup',
+  'Hanteln':'weight','Kettlebell':'weight','Band':'weight','Langhantel':'weight','Kabelzug':'weight',
+  'TRX':'row',
+  'Cardio':'jump','Cardio-Geräte':'jump','Boxsack':'jump',
+  'Dehnen':'stretch','Regeneration':'stretch',
+};
+const POSE_FIGS = {
+  pushup:  `<circle cx="30" cy="55" r="9"/><path d="M39 58 L75 70 L100 50 M75 70 L70 95 M75 70 L80 95 M39 58 L40 80 M39 58 L42 95"/>`,
+  plank:   `<circle cx="25" cy="60" r="9"/><path d="M34 62 L100 62 M55 62 L52 90 M70 62 L75 90"/>`,
+  squat:   `<circle cx="60" cy="25" r="9"/><path d="M60 34 L60 60 M60 60 L40 95 M60 60 L80 95 M60 40 L35 55 M60 40 L85 55"/>`,
+  pullup:  `<circle cx="60" cy="30" r="9"/><path d="M30 10 L90 10 M60 39 L60 70 M60 45 L35 20 M60 45 L85 20 M60 70 L45 100 M60 70 L75 100"/>`,
+  weight:  `<circle cx="60" cy="25" r="9"/><path d="M60 34 L60 75 M60 45 L40 60 M60 45 L80 60 M60 75 L45 105 M60 75 L75 105"/><circle cx="40" cy="60" r="4"/><circle cx="80" cy="60" r="4"/>`,
+  row:     `<circle cx="35" cy="40" r="9"/><path d="M40 45 L80 60 M80 60 L100 40 M40 45 L42 75 M40 45 L38 80"/>`,
+  jump:    `<circle cx="60" cy="20" r="9"/><path d="M60 29 L60 60 M60 35 L35 25 M60 35 L85 25 M60 60 L40 95 M60 60 L80 95"/>`,
+  stretch: `<circle cx="40" cy="35" r="9"/><path d="M40 44 L75 60 M75 60 L100 75 M40 44 L42 90 M40 44 L60 95"/>`,
+  backext: `<circle cx="25" cy="65" r="9"/><path d="M34 60 L100 45 M55 64 L52 92 M70 56 L78 88"/>`,
+};
+function poseSVG(cat) {
+  const fig = POSE_FIGS[CAT_POSE[cat]] || POSE_FIGS.plank;
+  return `<svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">${fig}</svg>`;
+}
+
 /* ── 4. WORKOUT TEMPLATES ── */
 const WORKOUTS = [
   { id:'kraftA',    name:'Kraft A',         sub:'Oberkörper & Core',       heroClass:'sh-blue',   cardClass:'bg-blue',   calories:200, tag:'KRAFT',
@@ -360,6 +387,12 @@ const WORKOUTS = [
   { id:'mobility',  name:'Mobility & Recovery', sub:'Dehnen & Regeneration', heroClass:'sh-green',  cardClass:'bg-green',  calories:80,  tag:'RECOVERY',
     exercises:['cobra','hipstretch','foamroll','sidepl','hollow'],
     basketballCompat: true },   // perfect after basketball
+  { id:'morning',   name:'Morgen-Routine',  sub:'Aktivierung & Energie',   heroClass:'sh-gold',   cardClass:'bg-gold',   calories:90,  tag:'ROUTINE',
+    exercises:['jj','plank','squat','superman','cobra'],
+    basketballCompat: true, isRoutine:true, slot:'morning' },
+  { id:'evening',   name:'Abend-Routine',   sub:'Kraft & Entspannung',     heroClass:'sh-purple', cardClass:'bg-purple', calories:120, tag:'ROUTINE',
+    exercises:['pushup','plank','glute','hipstretch','foamroll'],
+    basketballCompat: true, isRoutine:true, slot:'evening' },
 ];
 
 const dayShort = ['So','Mo','Di','Mi','Do','Fr','Sa'];
@@ -756,7 +789,26 @@ function renderHome() {
       ${todayDoneToday?'Nochmal trainieren':'Jetzt starten'}
     </button>`;
 
-  wrap.innerHTML = targetBanner + loadBanner + heroHTML;
+  // Morning / Evening routine quick access
+  const todayStr = new Date().toISOString().split('T')[0];
+  const morningDone = (S.done||[]).some(d=>d.wid==='morning'&&d.date===todayStr);
+  const eveningDone  = (S.done||[]).some(d=>d.wid==='evening'&&d.date===todayStr);
+  const routineRow = `<div style="margin:0 16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="rt-card" id="rt-morning" style="background:linear-gradient(135deg,#2a1f06,#3a2a08);border:1px solid rgba(240,165,0,.25);border-radius:14px;padding:14px;cursor:pointer">
+      <div style="font-size:20px">🌅</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;margin-top:4px">Morgen-Routine</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">${morningDone?'✓ Erledigt':'~15 Min'}</div>
+    </div>
+    <div class="rt-card" id="rt-evening" style="background:linear-gradient(135deg,#1f0e2a,#2a123a);border:1px solid rgba(155,109,255,.25);border-radius:14px;padding:14px;cursor:pointer">
+      <div style="font-size:20px">🌙</div>
+      <div style="font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;margin-top:4px">Abend-Routine</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">${eveningDone?'✓ Erledigt':'~15 Min'}</div>
+    </div>
+  </div>`;
+
+  wrap.innerHTML = routineRow + targetBanner + loadBanner + heroHTML;
+  document.getElementById('rt-morning')?.addEventListener('click', ()=>openSheet(WORKOUTS.find(w=>w.id==='morning'), -1));
+  document.getElementById('rt-evening')?.addEventListener('click', ()=>openSheet(WORKOUTS.find(w=>w.id==='evening'), -1));
   document.getElementById('th')?.addEventListener('click', ()=>openSheet(suggW, -1));
   document.getElementById('th-cta')?.addEventListener('click', ()=>openSheet(suggW, -1));
 
@@ -850,13 +902,35 @@ document.getElementById('sh-start').addEventListener('click',()=>{
 
 /* Timer */
 const CIRC = 490;
-let WS={idx:0,running:false,left:40,timer:null,start:null,rest:false};
+let WS={idx:0,running:false,left:40,timer:null,start:null,rest:false,pvTimer:null};
 
 function startWorkout(){
-  WS={idx:0,running:false,left:40,timer:null,start:Date.now(),rest:false};
+  WS={idx:0,running:false,left:40,timer:null,start:Date.now(),rest:false,pvTimer:null};
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-workout').classList.add('active');
-  loadEx(0); ppDo(true);
+  showPreview(0);
+}
+function showPreview(i){
+  clearInterval(WS.timer); WS.running=false;
+  clearInterval(WS.pvTimer);
+  WS.pvIdx=i;
+  const ex=exById(_cW.exercises[i]);
+  document.getElementById('pv-sketch').innerHTML = poseSVG(ex.cat);
+  document.getElementById('pv-name').textContent = ex.name;
+  document.getElementById('pv-cue').textContent = ex.desc;
+  document.getElementById('pv-meta').textContent = `${i+1} / ${_cW.exercises.length} · ${ex.sets} · ${ex.reps}`;
+  let c=3;
+  document.getElementById('pv-count').textContent=c;
+  document.getElementById('preview-screen').classList.add('show');
+  WS.pvTimer=setInterval(()=>{
+    c--;
+    if(c<=0){ clearInterval(WS.pvTimer); startExFromPreview(i); }
+    else document.getElementById('pv-count').textContent=c;
+  },1000);
+}
+function startExFromPreview(i){
+  document.getElementById('preview-screen').classList.remove('show');
+  loadEx(i); ppDo(true);
 }
 function loadEx(i){
   const ex=exById(_cW.exercises[i]);
@@ -911,7 +985,7 @@ function beginRest(){
 function nextExer(){
   document.getElementById('rest-screen').classList.remove('show');
   const n=WS.idx+1;if(n>=_cW.exercises.length){finishWO();return;}
-  loadEx(n);ppDo(true);
+  showPreview(n);
 }
 function finishWO(){
   document.getElementById('rest-screen').classList.remove('show');
@@ -930,11 +1004,16 @@ function finishWO(){
   save();
 }
 function closeWO(){
-  clearInterval(WS.timer);WS.running=false;
+  clearInterval(WS.timer);clearInterval(WS.pvTimer);WS.running=false;
   document.getElementById('rest-screen').classList.remove('show');
+  document.getElementById('preview-screen').classList.remove('show');
   document.getElementById('fin-screen').classList.remove('show');
   showScreen('home');
 }
+document.getElementById('pv-skip').addEventListener('click',()=>{
+  clearInterval(WS.pvTimer);
+  startExFromPreview(WS.pvIdx);
+});
 document.getElementById('wo-pp').addEventListener('click',()=>ppDo());
 document.getElementById('wo-next').addEventListener('click',()=>{clearInterval(WS.timer);WS.running=false;document.getElementById('rest-screen').classList.remove('show');nextExer();});
 document.getElementById('wo-prev').addEventListener('click',()=>{clearInterval(WS.timer);WS.running=false;document.getElementById('rest-screen').classList.remove('show');if(WS.idx>0){loadEx(WS.idx-1);ppDo(true);}});
@@ -984,6 +1063,8 @@ function openExDet(id){
   document.getElementById('exd-muscles').innerHTML=ex.muscles.map(m=>`<div class="mc">${m}</div>`).join('');
   document.getElementById('exd-equip').textContent=ex.equip.length?ex.equip.map(e=>equipLabel(e)).join(', '):'Kein Gerät nötig';
   document.getElementById('exd-usage').textContent=`${ex.sets} · ${ex.reps}`;
+  const sketchEl=document.getElementById('exd-sketch');
+  if(sketchEl) sketchEl.innerHTML=poseSVG(ex.cat);
   document.getElementById('ex-det').classList.add('open');
 }
 document.getElementById('exd-close').addEventListener('click',()=>document.getElementById('ex-det').classList.remove('open'));

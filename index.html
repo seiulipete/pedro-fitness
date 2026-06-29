@@ -180,10 +180,14 @@ nav{position:fixed;bottom:0;left:0;right:0;
 .wcard-top.bg-blue{background:linear-gradient(135deg,#0a1e36,#0d2848)}
 .wcard-top.bg-green{background:linear-gradient(135deg,#031a0d,#052a15)}
 .wcard-top.bg-orange{background:linear-gradient(135deg,#1e0a00,#2e1000)}
+.wcard-top.bg-gold{background:linear-gradient(135deg,#2a1f06,#3a2a08)}
+.wcard-top.bg-purple{background:linear-gradient(135deg,#1f0e2a,#2a123a)}
 .wcard-glow{position:absolute;inset:0}
 .wcard-top.bg-blue .wcard-glow{background:radial-gradient(circle at 80% 50%,rgba(58,159,240,.18) 0%,transparent 55%)}
 .wcard-top.bg-green .wcard-glow{background:radial-gradient(circle at 80% 50%,rgba(0,224,106,.14) 0%,transparent 55%)}
 .wcard-top.bg-orange .wcard-glow{background:radial-gradient(circle at 80% 50%,rgba(255,106,43,.18) 0%,transparent 55%)}
+.wcard-top.bg-gold .wcard-glow{background:radial-gradient(circle at 80% 50%,rgba(240,165,0,.18) 0%,transparent 55%)}
+.wcard-top.bg-purple .wcard-glow{background:radial-gradient(circle at 80% 50%,rgba(155,109,255,.18) 0%,transparent 55%)}
 .wcard-nm{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;
   text-transform:uppercase;letter-spacing:1px;position:relative;z-index:1}
 .wcard-tag{position:absolute;top:11px;right:11px;z-index:1;
@@ -409,6 +413,8 @@ canvas.mini-canvas{width:100%;height:100%}
 .sh-blue{background:linear-gradient(135deg,#0a1e36,#0d2848)}
 .sh-green{background:linear-gradient(135deg,#031a0d,#052a15)}
 .sh-orange{background:linear-gradient(135deg,#1e0a00,#2e1000)}
+.sh-gold{background:linear-gradient(135deg,#2a1f06,#3a2a08)}
+.sh-purple{background:linear-gradient(135deg,#1f0e2a,#2a123a)}
 .sheet-title{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;
   text-transform:uppercase;letter-spacing:1px;position:relative;z-index:1}
 .sheet-body{padding:16px 20px}
@@ -487,6 +493,21 @@ canvas.mini-canvas{width:100%;height:100%}
 .rest-sec-lbl{font-size:10px;color:var(--text2);letter-spacing:3px;text-transform:uppercase;margin-bottom:32px}
 .skip-btn{padding:12px 34px;border-radius:40px;border:1px solid var(--border2);
   background:none;color:var(--text2);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer}
+
+/* ── PREVIEW SCREEN (Sketch + Erklärung vor jeder Übung) ── */
+.preview-screen{
+  position:fixed;inset:0;z-index:150;display:none;
+  flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 28px;text-align:center;background:linear-gradient(180deg,#0a0a18 0%,var(--bg) 100%)}
+.preview-screen.show{display:flex;animation:fadeUp .3s ease}
+.pv-meta{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin-bottom:18px}
+.pv-sketch{width:130px;height:130px;color:var(--gold);margin-bottom:16px}
+.pv-sketch svg{width:100%;height:100%}
+.pv-name{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.pv-cue{font-size:13px;color:var(--text2);line-height:1.5;max-width:300px;margin-bottom:24px}
+.pv-count{font-family:'Oswald',sans-serif;font-size:60px;font-weight:700;
+  color:var(--red);line-height:1;margin-bottom:24px}
 .fin-em{font-size:68px;margin-bottom:14px;animation:pop 1.2s ease infinite alternate}
 @keyframes pop{from{transform:scale(1)}to{transform:scale(1.08)}}
 .fin-h{font-family:'Oswald',sans-serif;font-size:40px;font-weight:700;
@@ -510,6 +531,8 @@ canvas.mini-canvas{width:100%;height:100%}
   padding-bottom:calc(24px + var(--sb));animation:fadeUp .25s ease}
 .ex-det-ov.open{display:flex}
 .exd-hero{height:210px;position:relative;flex-shrink:0;display:flex;align-items:flex-end;padding:18px}
+.exd-sketch{position:absolute;top:18px;right:18px;width:64px;height:64px;color:rgba(255,255,255,.85);opacity:.9}
+.exd-sketch svg{width:100%;height:100%}
 .exd-close{position:absolute;top:calc(var(--st)+12px);right:14px;
   width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.6);
   border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer}
@@ -944,6 +967,7 @@ canvas.mini-canvas{width:100%;height:100%}
     <div class="exd-close" id="exd-close">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
     </div>
+    <div class="exd-sketch" id="exd-sketch"></div>
     <div class="exd-nm" id="exd-nm">–</div>
   </div>
   <div class="exd-body">
@@ -984,6 +1008,16 @@ canvas.mini-canvas{width:100%;height:100%}
   <div class="rest-num" id="rest-num">60</div>
   <div class="rest-sec-lbl">Sekunden</div>
   <button class="skip-btn" id="skip-rest">Überspringen →</button>
+</div>
+
+<!-- Preview Screen (Sketch + Erklärung vor jeder Übung) -->
+<div class="preview-screen" id="preview-screen">
+  <div class="pv-meta" id="pv-meta">1 / 6</div>
+  <div class="pv-sketch" id="pv-sketch"></div>
+  <div class="pv-name" id="pv-name">–</div>
+  <div class="pv-cue" id="pv-cue">–</div>
+  <div class="pv-count" id="pv-count">3</div>
+  <button class="skip-btn" id="pv-skip">Los! →</button>
 </div>
 
 <!-- Finish Screen -->
