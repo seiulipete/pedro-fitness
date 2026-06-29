@@ -872,6 +872,9 @@ function toggleDone(idx) {
 ════════════════════════════════════════════ */
 let _cW=null, _cIdx=-1;
 
+/* ── BACK-BUTTON GUARD: Handy-Zurück soll Overlays/Workout schließen, nicht die App verlassen ── */
+function pushNav(tag){ try{ history.pushState({pedrofitNav:tag}, ''); }catch(e){} }
+
 function openSheet(w, schedIdx) {
   _cW=w; _cIdx=schedIdx;
   document.getElementById('sh-hero').className='sheet-hero '+w.heroClass;
@@ -890,6 +893,7 @@ function openSheet(w, schedIdx) {
     </div>`;
   }).join('');
   document.getElementById('wo-sheet').classList.add('open');
+  pushNav('sheet');
 }
 document.getElementById('wo-sheet').addEventListener('click', e=>{
   if(e.target===document.getElementById('wo-sheet'))
@@ -908,6 +912,7 @@ function startWorkout(){
   WS={idx:0,running:false,left:40,timer:null,start:Date.now(),rest:false,pvTimer:null};
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-workout').classList.add('active');
+  pushNav('workout');
   showPreview(0);
 }
 function showPreview(i){
@@ -935,6 +940,7 @@ function startExFromPreview(i){
 function loadEx(i){
   const ex=exById(_cW.exercises[i]);
   WS.idx=i; WS.left=ex.workSec; WS.rest=false;
+  document.getElementById('wo-sketch').innerHTML=poseSVG(ex.cat);
   document.getElementById('wo-nm').textContent=ex.name;
   document.getElementById('wo-det').textContent=`${ex.sets} · ${ex.reps}`;
   document.getElementById('wo-ctr').textContent=`${i+1} / ${_cW.exercises.length}`;
@@ -1066,6 +1072,7 @@ function openExDet(id){
   const sketchEl=document.getElementById('exd-sketch');
   if(sketchEl) sketchEl.innerHTML=poseSVG(ex.cat);
   document.getElementById('ex-det').classList.add('open');
+  pushNav('exdet');
 }
 document.getElementById('exd-close').addEventListener('click',()=>document.getElementById('ex-det').classList.remove('open'));
 renderExercises();
@@ -1163,6 +1170,7 @@ function openMetricForm() {
       <input class="mf-input" data-key="${f.key}" type="number" inputmode="decimal" placeholder="${f.unit}" step="0.1"/>
     </div>`).join('');
   document.getElementById('metric-overlay').classList.add('open');
+  pushNav('metric');
 }
 document.getElementById('metric-save').addEventListener('click',()=>{
   const entry={date:new Date().toISOString().split('T')[0]};
@@ -1384,6 +1392,7 @@ function openEditPanel(key) {
     ov.classList.remove('open');renderProfile();renderAIPage();renderExList();
   };
   ov.classList.add('open');
+  pushNav('edit');
 }
 
 function multiChips2Grouped(container, key) {
@@ -1515,6 +1524,25 @@ document.getElementById('ib-install').addEventListener('click',async()=>{
 });
 document.getElementById('ib-dismiss').addEventListener('click',()=>
   document.getElementById('install-bar').classList.remove('show'));
+
+/* ── BACK-BUTTON GUARD: Browser/Handy-Zurück schließt Overlays statt App zu verlassen ── */
+pushNav('boot'); // initialer Anker, damit der allererste Zurück-Tap nicht sofort die App verlässt
+window.addEventListener('popstate', () => {
+  if (document.getElementById('screen-workout')?.classList.contains('active')) {
+    clearInterval(WS.timer); clearInterval(WS.pvTimer); WS.running = false;
+    document.getElementById('rest-screen')?.classList.remove('show');
+    document.getElementById('preview-screen')?.classList.remove('show');
+    document.getElementById('fin-screen')?.classList.remove('show');
+    showScreen('home');
+    return;
+  }
+  const overlayIds = ['wo-sheet', 'ex-det', 'metric-overlay', 'edit-overlay'];
+  for (const id of overlayIds) {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('open')) { el.classList.remove('open'); return; }
+  }
+  // Nichts mehr offen (z.B. schon auf Home) — Zurück darf die App normal verlassen
+});
 
 if('serviceWorker' in navigator)
   navigator.serviceWorker.register('sw.js').catch(()=>{});

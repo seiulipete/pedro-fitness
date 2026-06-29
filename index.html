@@ -457,6 +457,8 @@ canvas.mini-canvas{width:100%;height:100%}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .wo-det{font-size:14px;color:var(--text2);margin-bottom:28px}
 .timer-wrap{position:relative;width:180px;height:180px;margin:0 auto 24px}
+.wo-sketch{width:60px;height:60px;color:var(--gold);opacity:.85;margin-bottom:6px}
+.wo-sketch svg{width:100%;height:100%}
 .t-svg{transform:rotate(-90deg)}
 .t-bg{fill:none;stroke:var(--border2);stroke-width:10}
 .t-ring{fill:none;stroke:var(--red);stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .95s linear}
@@ -912,6 +914,7 @@ canvas.mini-canvas{width:100%;height:100%}
     <div style="width:34px"></div>
   </div>
   <div class="wo-main">
+    <div class="wo-sketch" id="wo-sketch"></div>
     <div class="wo-nm" id="wo-nm">–</div>
     <div class="wo-det" id="wo-det">–</div>
     <div class="timer-wrap">
